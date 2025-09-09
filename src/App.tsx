@@ -10,6 +10,8 @@ import NotFound from "./pages/NotFound";
 import CampaignsPage from "./pages/CampaignsPage";
 import OffersPage from "./pages/OffersPage";
 import IntegrationPage from "./pages/IntegrationPage";
+import ProfilePage from "./pages/ProfilePage";
+import { ModernLayout } from "./components/layout/ModernLayout";
 
 const queryClient = new QueryClient();
 
@@ -21,11 +23,12 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/campaigns" element={<CampaignsPage />} />
-            <Route path="/offers" element={<OffersPage />} />
-            <Route path="/integration" element={<IntegrationPage />} />
+            <Route path="/" element={<ModernLayout><Index /></ModernLayout>} />
+            <Route path="/campaigns" element={<ModernLayout><CampaignsPage /></ModernLayout>} />
+            <Route path="/offers" element={<ModernLayout><OffersPage /></ModernLayout>} />
+            <Route path="/integration" element={<ModernLayout><IntegrationPage /></ModernLayout>} />
+            <Route path="/profile" element={<ModernLayout><ProfilePage /></ModernLayout>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

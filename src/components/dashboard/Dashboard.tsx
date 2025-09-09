@@ -2,33 +2,30 @@ import { KPICards } from "./KPICards";
 import { RevenueChart } from "./RevenueChart";
 import { TopCampaigns } from "./TopCampaigns";
 import { RecentActivity } from "./RecentActivity";
+import { DashboardFiltersState } from "./DashboardFilters";
 
-export const Dashboard = () => {
+interface DashboardProps {
+  filters?: DashboardFiltersState;
+}
+
+export const Dashboard = ({ filters }: DashboardProps) => {
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-foreground-muted mt-2">
-          Welcome back! Here's what's happening with your campaigns today.
-        </p>
-      </div>
-
+    <div className="space-y-6">
       {/* KPI Cards */}
-      <KPICards />
+      <KPICards filters={filters} />
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <RevenueChart />
+          <RevenueChart filters={filters} />
         </div>
         <div>
-          <RecentActivity />
+          <RecentActivity filters={filters} />
         </div>
       </div>
 
       {/* Top Campaigns */}
-      <TopCampaigns />
+      <TopCampaigns filters={filters} />
     </div>
   );
 };

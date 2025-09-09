@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Dashboard } from "@/components/dashboard/Dashboard";
+import { DashboardFilters, DashboardFiltersState } from "@/components/dashboard/DashboardFilters";
 import { useAuth } from '@/hooks/useAuth';
 import { useProfileBootstrap } from '@/hooks/useProfileBootstrap';
 import { useEffect } from 'react';
+import { subDays } from "date-fns";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -11,6 +14,21 @@ const Index = () => {
   
   // Bootstrap user profile if needed
   useProfileBootstrap();
+
+  const [filters, setFilters] = useState<DashboardFiltersState>({
+    dateRange: {
+      from: subDays(new Date(), 29),
+      to: new Date()
+    },
+    campaigns: [],
+    status: "all",
+    searchTerm: ""
+  });
+
+  const handleExportData = () => {
+    // TODO: Implement CSV export functionality
+    console.log("Exporting data with filters:", filters);
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -35,7 +53,22 @@ const Index = () => {
 
   return (
     <AppLayout>
-      <Dashboard />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-foreground-muted mt-2">
+            Monitor your campaign performance and analytics
+          </p>
+        </div>
+        
+        <DashboardFilters 
+          filters={filters}
+          onFiltersChange={setFilters}
+          onExportData={handleExportData}
+        />
+        
+        <Dashboard filters={filters} />
+      </div>
     </AppLayout>
   );
 };

@@ -4,8 +4,13 @@ import { Button } from "@/components/ui/button";
 import { ExternalLink, Play, Pause, Square } from "lucide-react";
 import { useTopCampaigns } from "@/hooks/useRealData";
 import { cn } from "@/lib/utils";
+import { DashboardFiltersState } from "./DashboardFilters";
 
-export const TopCampaigns = () => {
+interface TopCampaignsProps {
+  filters?: DashboardFiltersState;
+}
+
+export const TopCampaigns = ({ filters }: TopCampaignsProps) => {
   const { data: campaigns, isLoading } = useTopCampaigns();
 
   if (isLoading) {

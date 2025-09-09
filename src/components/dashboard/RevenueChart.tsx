@@ -1,8 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { useChartData } from "@/hooks/useRealData";
+import { DashboardFiltersState } from "./DashboardFilters";
 
-export const RevenueChart = () => {
+interface RevenueChartProps {
+  filters?: DashboardFiltersState;
+}
+
+export const RevenueChart = ({ filters }: RevenueChartProps) => {
   const { data: chartData, isLoading } = useChartData();
 
   if (isLoading) {
