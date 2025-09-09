@@ -132,7 +132,8 @@ export function useCampaigns() {
             name,
             network,
             payout,
-            currency
+            currency,
+            offer_url
           )
         `)
         .eq('user_id', user.id)
