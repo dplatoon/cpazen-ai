@@ -14,39 +14,64 @@ export default {
     },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
+        // Core System
+        border: "hsl(var(--card-border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        background: {
+          DEFAULT: "hsl(var(--background))",
+          secondary: "hsl(var(--background-secondary))",
+          tertiary: "hsl(var(--background-tertiary))",
+        },
+        foreground: {
+          DEFAULT: "hsl(var(--foreground))",
+          muted: "hsl(var(--foreground-muted))",
+          subtle: "hsl(var(--foreground-subtle))",
+        },
+        
+        // Brand Colors
+        brand: {
+          teal: "hsl(var(--brand-teal))",
+          purple: "hsl(var(--brand-purple))",
+          dark: "hsl(var(--brand-dark))",
+          darker: "hsl(var(--brand-darker))",
+        },
+        
+        // Interactive Elements
         primary: {
           DEFAULT: "hsl(var(--primary))",
+          hover: "hsl(var(--primary-hover))",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
+          hover: "hsl(var(--secondary-hover))",
           foreground: "hsl(var(--secondary-foreground))",
+        },
+        
+        // Status Colors
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
+        
+        // Card System
         card: {
           DEFAULT: "hsl(var(--card))",
+          hover: "hsl(var(--card-hover))",
           foreground: "hsl(var(--card-foreground))",
+          border: "hsl(var(--card-border))",
         },
+        
+        // Sidebar
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -57,6 +82,19 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      
+      backgroundImage: {
+        'gradient-brand': 'var(--gradient-brand)',
+        'gradient-card': 'var(--gradient-card)',
+        'gradient-hover': 'var(--gradient-hover)',
+      },
+      
+      boxShadow: {
+        'sm': 'var(--shadow-sm)',
+        'md': 'var(--shadow-md)',
+        'lg': 'var(--shadow-lg)',
+        'brand': 'var(--shadow-brand)',
       },
       borderRadius: {
         lg: "var(--radius)",
