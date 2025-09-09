@@ -11,9 +11,9 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3, current: true },
   { name: "Campaigns", href: "/campaigns", icon: Target, current: false },
   { name: "Offers", href: "/offers", icon: Zap, current: false },
+  { name: "Integration", href: "/integration", icon: Settings, current: false },
   { name: "Traffic", href: "/traffic", icon: Globe, current: false },
   { name: "Affiliates", href: "/affiliates", icon: Users, current: false },
-  { name: "Settings", href: "/settings", icon: Settings, current: false },
 ];
 
 export const Sidebar = ({ open, onOpenChange }: SidebarProps) => {

@@ -1,16 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Dashboard } from "@/components/dashboard/Dashboard";
+import { OfferManager } from "@/components/offers/OfferManager";
 import { useAuth } from '@/hooks/useAuth';
-import { useProfileBootstrap } from '@/hooks/useProfileBootstrap';
 import { useEffect } from 'react';
 
-const Index = () => {
+const OffersPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  
-  // Bootstrap user profile if needed
-  useProfileBootstrap();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -35,9 +31,9 @@ const Index = () => {
 
   return (
     <AppLayout>
-      <Dashboard />
+      <OfferManager />
     </AppLayout>
   );
 };
 
-export default Index;
+export default OffersPage;

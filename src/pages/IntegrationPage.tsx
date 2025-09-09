@@ -1,16 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Dashboard } from "@/components/dashboard/Dashboard";
+import { IntegrationDocs } from "@/components/integration/IntegrationDocs";
 import { useAuth } from '@/hooks/useAuth';
-import { useProfileBootstrap } from '@/hooks/useProfileBootstrap';
 import { useEffect } from 'react';
 
-const Index = () => {
+const IntegrationPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  
-  // Bootstrap user profile if needed
-  useProfileBootstrap();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -35,9 +31,9 @@ const Index = () => {
 
   return (
     <AppLayout>
-      <Dashboard />
+      <IntegrationDocs />
     </AppLayout>
   );
 };
 
-export default Index;
+export default IntegrationPage;

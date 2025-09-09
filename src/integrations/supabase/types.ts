@@ -146,7 +146,7 @@ export type Database = {
           {
             foreignKeyName: "conversions_click_id_fkey"
             columns: ["click_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "clicks"
             referencedColumns: ["click_id"]
           },

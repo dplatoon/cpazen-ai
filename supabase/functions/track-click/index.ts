@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.214.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
@@ -97,6 +97,25 @@ serve(async (req) => {
 
     const clickId = clickData?.click_id;
     
+    // Asynchronously trigger bot detection (non-blocking)
+    if (clickId) {
+      const internalSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET');
+      fetch(`${supabaseUrl}/functions/v1/bot-detection`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Internal-Secret': internalSecret || '',
+        },
+        body: JSON.stringify({
+          click_id: clickId,
+          user_agent: userAgent,
+          ip: ip
+        })
+      }).catch(error => {
+        console.error('Bot detection failed:', error);
+      });
+    }
+
     // Build redirect URL with click_id macro replacement
     let redirectUrl = campaign.offers.offer_url;
     if (clickId) {
@@ -109,6 +128,8 @@ serve(async (req) => {
       const separator = redirectUrl.includes('?') ? '&' : '?';
       redirectUrl += `${separator}sub_id=${encodeURIComponent(subId)}`;
     }
+
+    console.log(`Click tracked: ${clickId} for campaign ${campaignId}`);
 
     // Perform redirect based on campaign settings
     if (campaign.redirect_mode === 'meta') {

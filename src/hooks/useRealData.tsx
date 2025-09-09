@@ -33,17 +33,17 @@ export function useDashboardStats() {
         .lte('created_at', todayEnd);
 
       const clicks = todayClicks?.length || 0;
-      const conversions = todayClicks?.filter(c => c.conversions.length > 0).length || 0;
-      const revenue = todayClicks?.reduce((sum, c) => sum + (c.conversions[0]?.payout || 0), 0) || 0;
+      const conversions = todayClicks?.filter(c => c.conversions && c.conversions.payout).length || 0;
+      const revenue = todayClicks?.reduce((sum, c) => sum + (c.conversions?.payout || 0), 0) || 0;
       const conversionRate = clicks > 0 ? (conversions / clicks * 100) : 0;
       const epc = clicks > 0 ? (revenue / clicks) : 0;
 
       // Calculate average payout
       const approvedConversions = todayClicks?.filter(c => 
-        c.conversions.length > 0 && c.conversions[0].status === 'approved'
+        c.conversions && c.conversions.status === 'approved'
       ) || [];
       const avgPayout = approvedConversions.length > 0 ? 
-        approvedConversions.reduce((sum, c) => sum + c.conversions[0].payout, 0) / approvedConversions.length : 0;
+        approvedConversions.reduce((sum, c) => sum + c.conversions.payout, 0) / approvedConversions.length : 0;
 
       return {
         todayClicks: clicks,
@@ -97,8 +97,8 @@ export function useChartData() {
           .lte('created_at', dayEnd);
 
         const clicks = dayClicks?.length || 0;
-        const conversions = dayClicks?.filter(c => c.conversions.length > 0).length || 0;
-        const revenue = dayClicks?.reduce((sum, c) => sum + (c.conversions[0]?.payout || 0), 0) || 0;
+        const conversions = dayClicks?.filter(c => c.conversions && c.conversions.payout).length || 0;
+        const revenue = dayClicks?.reduce((sum, c) => sum + (c.conversions?.payout || 0), 0) || 0;
 
         chartData.push({
           date: day,
@@ -218,9 +218,9 @@ export function useTopCampaigns() {
           };
         }
         acc[campaignId].clicks++;
-        if (click.conversions.length > 0) {
+        if (click.conversions && click.conversions.payout) {
           acc[campaignId].conversions++;
-          acc[campaignId].revenue += click.conversions[0].payout;
+          acc[campaignId].revenue += click.conversions.payout;
         }
         return acc;
       }, {});

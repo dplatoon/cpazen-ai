@@ -1,5 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.214.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
@@ -13,29 +13,62 @@ serve(async (req) => {
   }
 
   try {
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY is not set');
+    // Get authenticated user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authorization required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Create client with anon key for auth verification
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false }
+    });
 
-    // Get yesterday's data for analysis
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Invalid token' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) {
+      return new Response(JSON.stringify({ 
+        insights: ['AI insights require OpenAI API key configuration.'],
+        dataAnalyzed: { message: 'OpenAI API key not configured' }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Create service client for data access
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get yesterday's data for analysis - FILTERED BY USER
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStart = new Date(yesterday.setHours(0, 0, 0, 0)).toISOString();
     const yesterdayEnd = new Date(yesterday.setHours(23, 59, 59, 999)).toISOString();
 
-    // Fetch performance data
+    // Fetch performance data filtered by user's campaigns
     const { data: clicksData } = await supabase
       .from('clicks')
       .select(`
         *,
-        campaigns (
+        campaigns!inner (
           name,
+          user_id,
           offers (
             name,
             network,
@@ -47,12 +80,13 @@ serve(async (req) => {
           status
         )
       `)
+      .eq('campaigns.user_id', user.id)
       .gte('created_at', yesterdayStart)
       .lte('created_at', yesterdayEnd);
 
     if (!clicksData || clicksData.length === 0) {
       return new Response(JSON.stringify({ 
-        insights: ['No data available for analysis yesterday.']
+        insights: ['No data available for analysis yesterday. Start driving traffic to see insights!']
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -60,9 +94,9 @@ serve(async (req) => {
 
     // Process data for analysis
     const totalClicks = clicksData.length;
-    const totalConversions = clicksData.filter(c => c.conversions.length > 0).length;
+    const totalConversions = clicksData.filter(c => c.conversions && c.conversions.length > 0).length;
     const totalRevenue = clicksData.reduce((sum, c) => 
-      sum + (c.conversions[0]?.payout || 0), 0
+      sum + (c.conversions && c.conversions[0]?.payout || 0), 0
     );
     const conversionRate = totalClicks > 0 ? (totalConversions / totalClicks * 100) : 0;
     const epc = totalClicks > 0 ? (totalRevenue / totalClicks) : 0;
@@ -75,12 +109,12 @@ serve(async (req) => {
           clicks: 0,
           conversions: 0,
           revenue: 0,
-          offer: click.campaigns.offers.name,
-          network: click.campaigns.offers.network
+          offer: click.campaigns.offers?.name || 'Unknown',
+          network: click.campaigns.offers?.network || 'Unknown'
         };
       }
       acc[campaignName].clicks++;
-      if (click.conversions.length > 0) {
+      if (click.conversions && click.conversions.length > 0) {
         acc[campaignName].conversions++;
         acc[campaignName].revenue += click.conversions[0].payout;
       }
@@ -92,7 +126,7 @@ serve(async (req) => {
       const source = click.referrer || 'Direct';
       if (!acc[source]) acc[source] = { clicks: 0, conversions: 0 };
       acc[source].clicks++;
-      if (click.conversions.length > 0) acc[source].conversions++;
+      if (click.conversions && click.conversions.length > 0) acc[source].conversions++;
       return acc;
     }, {});
 
@@ -101,7 +135,7 @@ serve(async (req) => {
       const country = click.country || 'Unknown';
       if (!acc[country]) acc[country] = { clicks: 0, conversions: 0 };
       acc[country].clicks++;
-      if (click.conversions.length > 0) acc[country].conversions++;
+      if (click.conversions && click.conversions.length > 0) acc[country].conversions++;
       return acc;
     }, {});
 
@@ -187,7 +221,7 @@ serve(async (req) => {
       .filter(line => line.length > 0)
       .slice(0, 3);
 
-    console.log('AI Insights generated:', insights);
+    console.log(`AI Insights generated for user ${user.id}:`, insights);
 
     return new Response(JSON.stringify({ 
       insights,
