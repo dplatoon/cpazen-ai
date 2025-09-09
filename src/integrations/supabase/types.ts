@@ -14,13 +14,267 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campaigns: {
+        Row: {
+          cost_model: string
+          created_at: string
+          id: string
+          name: string
+          offer_id: string
+          redirect_mode: string
+          status: string
+          tracking_domain: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cost_model?: string
+          created_at?: string
+          id?: string
+          name: string
+          offer_id: string
+          redirect_mode?: string
+          status?: string
+          tracking_domain?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cost_model?: string
+          created_at?: string
+          id?: string
+          name?: string
+          offer_id?: string
+          redirect_mode?: string
+          status?: string
+          tracking_domain?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clicks: {
+        Row: {
+          bot_score: number | null
+          browser: string | null
+          campaign_id: string
+          click_id: string
+          country: string | null
+          created_at: string
+          id: string
+          ip: unknown | null
+          os: string | null
+          referrer: string | null
+          sub_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          bot_score?: number | null
+          browser?: string | null
+          campaign_id: string
+          click_id?: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          ip?: unknown | null
+          os?: string | null
+          referrer?: string | null
+          sub_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          bot_score?: number | null
+          browser?: string | null
+          campaign_id?: string
+          click_id?: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          ip?: unknown | null
+          os?: string | null
+          referrer?: string | null
+          sub_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clicks_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversions: {
+        Row: {
+          click_id: string
+          created_at: string
+          id: string
+          network_postback_raw: Json | null
+          payout: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          click_id: string
+          created_at?: string
+          id?: string
+          network_postback_raw?: Json | null
+          payout?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          click_id?: string
+          created_at?: string
+          id?: string
+          network_postback_raw?: Json | null
+          payout?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversions_click_id_fkey"
+            columns: ["click_id"]
+            isOneToOne: false
+            referencedRelation: "clicks"
+            referencedColumns: ["click_id"]
+          },
+        ]
+      }
+      offers: {
+        Row: {
+          countries: string[] | null
+          created_at: string
+          currency: string
+          daily_cap: number | null
+          id: string
+          name: string
+          network: string
+          offer_url: string
+          payout: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          countries?: string[] | null
+          created_at?: string
+          currency?: string
+          daily_cap?: number | null
+          id?: string
+          name: string
+          network: string
+          offer_url: string
+          payout?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          countries?: string[] | null
+          created_at?: string
+          currency?: string
+          daily_cap?: number | null
+          id?: string
+          name?: string
+          network?: string
+          offer_url?: string
+          payout?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          email: string
+          id: string
+          role: string
+          secret_key: string
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          role?: string
+          secret_key?: string
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          role?: string
+          secret_key?: string
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      rules: {
+        Row: {
+          action_json: Json
+          active: boolean
+          condition_json: Json
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_json: Json
+          active?: boolean
+          condition_json: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_json?: Json
+          active?: boolean
+          condition_json?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
