@@ -8,8 +8,58 @@ interface KPICardsProps {
   filters?: DashboardFiltersState;
 }
 
+interface KPICardProps {
+  title: string;
+  value: string | number;
+  change: number;
+  icon: React.ComponentType<{ className?: string }>;
+  format?: 'number' | 'currency' | 'percentage';
+}
+
+const KPICard = ({ title, value, change, icon: Icon, format = 'number' }: KPICardProps) => {
+  const formatValue = (val: string | number) => {
+    if (format === 'currency') {
+      return `$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    }
+    if (format === 'percentage') {
+      return `${val}%`;
+    }
+    return Number(val).toLocaleString();
+  };
+
+  const isPositive = change >= 0;
+
+  return (
+    <Card className="p-6 bg-gradient-card hover:bg-gradient-hover transition-all duration-200 border-card-border">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-foreground-muted">{title}</p>
+          <p className="text-2xl font-bold text-foreground">{formatValue(value)}</p>
+          <div className="flex items-center space-x-1">
+            {isPositive ? (
+              <TrendingUp className="h-4 w-4 text-success" />
+            ) : (
+              <TrendingDown className="h-4 w-4 text-destructive" />
+            )}
+            <span
+              className={cn(
+                "text-sm font-medium",
+                isPositive ? "text-success" : "text-destructive"
+              )}
+            >
+              {isPositive ? '+' : ''}{change}%
+            </span>
+          </div>
+        </div>
+        <div className="h-12 w-12 rounded-lg bg-gradient-brand/10 flex items-center justify-center">
+          <Icon className="h-6 w-6 text-brand-teal" />
+        </div>
+      </div>
+    </Card>
+  );
+};
+
 export const KPICards = ({ filters }: KPICardsProps) => {
-  const { data: stats, isLoading } = useDashboardStats();
   const { data: stats, isLoading } = useDashboardStats();
 
   if (isLoading) {

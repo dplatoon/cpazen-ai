@@ -4,6 +4,7 @@ import { CheckCircle, XCircle, Clock, TrendingUp } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { DashboardFiltersState } from "./DashboardFilters";
 
 interface ActivityItem {
   id: string;
@@ -14,9 +15,13 @@ interface ActivityItem {
   value?: number;
 }
 
+interface RecentActivityProps {
+  filters?: DashboardFiltersState;
+}
+
 const mockActivity: ActivityItem[] = [];
 
-export const RecentActivity = () => {
+export const RecentActivity = ({ filters }: RecentActivityProps) => {
   const { user } = useAuth();
 
   const { data: recentActivity = [] } = useQuery({
