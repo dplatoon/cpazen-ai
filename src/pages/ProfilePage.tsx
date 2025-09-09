@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Copy, Eye, EyeOff, User, Key, Settings, Save } from "lucide-react";
+import { Copy, Eye, EyeOff, User, Key, Settings, Save, RotateCcw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile, useSecretKey, useRotateSecretKey } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from '@tanstack/react-query';
 
 const timezones = [
   "UTC", "America/New_York", "America/Los_Angeles", "America/Chicago", 
@@ -20,9 +21,13 @@ const timezones = [
 export default function ProfilePage() {
   const { user } = useAuth();
   const { data: profile, refetch } = useProfile();
+  const { data: secretKey, refetch: refetchSecretKey } = useSecretKey();
+  const rotateSecretKey = useRotateSecretKey();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showSecretKey, setShowSecretKey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
   const [formData, setFormData] = useState({
     email: profile?.email || "",
     company_name: profile?.company_name || "",
@@ -62,12 +67,36 @@ export default function ProfilePage() {
   };
 
   const copySecretKey = () => {
-    if (profile?.secret_key) {
-      navigator.clipboard.writeText(profile.secret_key);
+    if (secretKey) {
+      navigator.clipboard.writeText(secretKey);
       toast({
         title: "Copied!",
         description: "Secret key copied to clipboard",
       });
+    }
+  };
+
+  const handleRotateSecretKey = async () => {
+    setIsRotating(true);
+    try {
+      const newSecretKey = await rotateSecretKey();
+      
+      // Invalidate and refetch secret key
+      queryClient.invalidateQueries({ queryKey: ['secret-key'] });
+      await refetchSecretKey();
+      
+      toast({
+        title: "Secret Key Rotated",
+        description: "Your secret key has been successfully updated.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to rotate secret key",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRotating(false);
     }
   };
 
@@ -196,7 +225,7 @@ export default function ProfilePage() {
             <div className="flex items-center space-x-2">
               <Input
                 type={showSecretKey ? "text" : "password"}
-                value={profile?.secret_key || ""}
+                value={secretKey || "Loading..."}
                 readOnly
                 className="bg-background-secondary border-card-border font-mono text-sm"
               />
@@ -216,7 +245,21 @@ export default function ProfilePage() {
               >
                 <Copy className="h-4 w-4" />
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRotateSecretKey}
+                disabled={isRotating}
+                className="border-card-border"
+              >
+                <RotateCcw className={`h-4 w-4 ${isRotating ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
+            {secretKey && (
+              <p className="text-xs text-foreground-muted mt-2">
+                Last rotated: You can rotate your secret key up to 3 times per day for security.
+              </p>
+            )}
           </div>
         </div>
       </Card>

@@ -9,7 +9,6 @@ export interface Profile {
   role: string;
   company_name?: string;
   timezone: string;
-  secret_key: string;
   created_at: string;
   updated_at: string;
 }
@@ -24,7 +23,7 @@ export function useProfile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, user_id, email, role, company_name, timezone, created_at, updated_at')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -37,4 +36,48 @@ export function useProfile() {
     },
     enabled: !!user,
   });
+}
+
+// Separate hook for secret key with proper security
+export function useSecretKey() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['secret-key', user?.id],
+    queryFn: async (): Promise<string | null> => {
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .rpc('get_user_secret_key');
+
+      if (error) {
+        console.error('Error fetching secret key:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // Keep for 5 minutes
+    gcTime: 10 * 60 * 1000, // Cache for 10 minutes
+  });
+}
+
+// Hook for secret key rotation
+export function useRotateSecretKey() {
+  const { user } = useAuth();
+
+  return async (): Promise<string> => {
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .rpc('rotate_user_secret_key');
+
+    if (error) {
+      console.error('Error rotating secret key:', error);
+      throw error;
+    }
+
+    return data;
+  };
 }
