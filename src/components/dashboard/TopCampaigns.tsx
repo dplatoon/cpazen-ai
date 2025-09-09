@@ -2,10 +2,32 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Play, Pause, Square } from "lucide-react";
-import { mockCampaigns } from "@/lib/mockData";
+import { useTopCampaigns } from "@/hooks/useRealData";
 import { cn } from "@/lib/utils";
 
 export const TopCampaigns = () => {
+  const { data: campaigns, isLoading } = useTopCampaigns();
+
+  if (isLoading) {
+    return (
+      <Card className="bg-gradient-card border-card-border">
+        <div className="p-6 border-b border-card-border">
+          <h3 className="text-lg font-semibold text-foreground">Top Campaigns</h3>
+          <p className="text-sm text-foreground-muted">Best performing campaigns this week</p>
+        </div>
+        <div className="p-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between py-3 animate-pulse">
+              <div className="h-4 bg-card-hover/50 rounded w-32"></div>
+              <div className="h-4 bg-card-hover/50 rounded w-16"></div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+  }
+
+  const topCampaigns = campaigns || [];
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -63,51 +85,56 @@ export const TopCampaigns = () => {
             </tr>
           </thead>
           <tbody>
-            {mockCampaigns.map((campaign) => (
-              <tr key={campaign.id} className="border-b border-card-border/50 hover:bg-card-hover/50 transition-colors">
-                <td className="p-4">
-                  <div>
-                    <div className="font-medium text-foreground">{campaign.name}</div>
-                    <div className="text-sm text-foreground-muted">{campaign.offer}</div>
-                  </div>
-                </td>
-                <td className="p-4">
-                  <Badge variant="outline" className="border-card-border">
-                    {campaign.network}
-                  </Badge>
-                </td>
-                <td className="p-4 text-right font-medium text-foreground">
-                  {campaign.clicks.toLocaleString()}
-                </td>
-                <td className="p-4 text-right font-medium text-foreground">
-                  {campaign.conversions}
-                </td>
-                <td className="p-4 text-right font-medium text-success">
-                  ${campaign.revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </td>
-                <td className="p-4 text-right font-medium text-foreground">
-                  {campaign.conversionRate.toFixed(2)}%
-                </td>
-                <td className="p-4 text-right font-medium text-foreground">
-                  ${campaign.epc.toFixed(2)}
-                </td>
-                <td className="p-4 text-center">
-                  {getStatusBadge(campaign.status)}
-                </td>
-                <td className="p-4 text-center">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "h-8 w-8 p-0",
-                      campaign.status === 'active' ? "text-warning hover:bg-warning/10" : "text-success hover:bg-success/10"
-                    )}
-                  >
-                    {getStatusIcon(campaign.status)}
-                  </Button>
+            {topCampaigns.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="p-8 text-center">
+                  <p className="text-foreground-muted">No campaign data yet. Create your first campaign to see performance metrics here.</p>
                 </td>
               </tr>
-            ))}
+            ) : (
+              topCampaigns.map((campaign: any) => (
+                <tr key={campaign.id} className="border-b border-card-border/50 hover:bg-card-hover/50 transition-colors">
+                  <td className="p-4">
+                    <div>
+                      <div className="font-medium text-foreground">{campaign.name}</div>
+                      <div className="text-sm text-foreground-muted">{campaign.offer}</div>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <Badge variant="outline" className="border-card-border">
+                      {campaign.network}
+                    </Badge>
+                  </td>
+                  <td className="p-4 text-right font-medium text-foreground">
+                    {(campaign.clicks || 0).toLocaleString()}
+                  </td>
+                  <td className="p-4 text-right font-medium text-foreground">
+                    {campaign.conversions || 0}
+                  </td>
+                  <td className="p-4 text-right font-medium text-success">
+                    ${(campaign.revenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="p-4 text-right font-medium text-foreground">
+                    {campaign.clicks > 0 ? ((campaign.conversions / campaign.clicks) * 100).toFixed(2) : '0.00'}%
+                  </td>
+                  <td className="p-4 text-right font-medium text-foreground">
+                    ${campaign.clicks > 0 ? (campaign.revenue / campaign.clicks).toFixed(2) : '0.00'}
+                  </td>
+                  <td className="p-4 text-center">
+                    {getStatusBadge('active')}
+                  </td>
+                  <td className="p-4 text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-success hover:bg-success/10"
+                    >
+                      {getStatusIcon('active')}
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

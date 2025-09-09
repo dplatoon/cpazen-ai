@@ -1,1 +1,10 @@
 project_id = "pxdypbnzlxxvewtwkohn"
+
+[functions.track-click]
+verify_jwt = false
+
+[functions.postback]
+verify_jwt = false
+
+[functions.bot-detection]
+verify_jwt = false

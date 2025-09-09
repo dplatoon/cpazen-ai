@@ -1,8 +1,23 @@
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
-import { mockChartData } from "@/lib/mockData";
+import { useChartData } from "@/hooks/useRealData";
 
 export const RevenueChart = () => {
+  const { data: chartData, isLoading } = useChartData();
+
+  if (isLoading) {
+    return (
+      <Card className="p-6 bg-gradient-card border-card-border">
+        <div className="animate-pulse">
+          <div className="h-6 bg-card-hover/50 rounded mb-2 w-48"></div>
+          <div className="h-4 bg-card-hover/30 rounded mb-6 w-24"></div>
+          <div className="h-80 bg-card-hover/20 rounded"></div>
+        </div>
+      </Card>
+    );
+  }
+
+  const data = chartData || [];
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -37,7 +52,7 @@ export const RevenueChart = () => {
 
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={mockChartData}>
+          <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--card-border))" />
             <XAxis 
               dataKey="date" 

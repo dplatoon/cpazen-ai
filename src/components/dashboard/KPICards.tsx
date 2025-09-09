@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, MousePointer, Target, BarChart3 } from "lucide-react";
-import { mockDashboardStats } from "@/lib/mockData";
+import { useDashboardStats } from "@/hooks/useRealData";
 import { cn } from "@/lib/utils";
 
 interface KPICardProps {
@@ -55,7 +55,21 @@ const KPICard = ({ title, value, change, icon: Icon, format = 'number' }: KPICar
 };
 
 export const KPICards = () => {
-  const stats = mockDashboardStats;
+  const { data: stats, isLoading } = useDashboardStats();
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card key={i} className="p-6 bg-gradient-card border-card-border animate-pulse">
+            <div className="h-16 bg-card-hover/50 rounded"></div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (!stats) return null;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
