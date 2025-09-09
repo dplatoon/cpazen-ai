@@ -363,12 +363,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           countries: string[]
+          created_at: string
           currency: string
           daily_cap: number
           id: string
           name: string
           network: string
+          offer_url: string
           payout: number
+          status: string
+          updated_at: string
         }[]
       }
       get_user_role: {
