@@ -3,9 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Filter, ExternalLink, DollarSign, Globe } from "lucide-react";
-import { mockOffers } from "@/lib/mockData";
+import { useOffers } from "@/hooks/useOffers";
+import { AddOfferDialog } from "./AddOfferDialog";
+import { useState } from "react";
 
 export const OfferManager = () => {
+  const { data: offers, isLoading, refetch } = useOffers();
+  const [searchTerm, setSearchTerm] = useState('');
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -19,20 +24,37 @@ export const OfferManager = () => {
     }
   };
 
-  const getCategoryBadge = (category: string) => {
+  const getNetworkBadge = (network: string) => {
     const colors = {
-      'Dating': 'bg-pink-500/10 text-pink-500 border-pink-500/20',
-      'Finance': 'bg-green-500/10 text-green-500 border-green-500/20',
-      'Health': 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-      'Gaming': 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+      'MaxBounty': 'bg-pink-500/10 text-pink-500 border-pink-500/20',
+      'Everflow': 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+      'ShareASale': 'bg-green-500/10 text-green-500 border-green-500/20',
+      'ClickDealer': 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+      'CPA Junction': 'bg-orange-500/10 text-orange-500 border-orange-500/20',
     };
     
     return (
-      <Badge className={colors[category as keyof typeof colors] || 'bg-gray-500/10 text-gray-500 border-gray-500/20'}>
-        {category}
+      <Badge className={colors[network as keyof typeof colors] || 'bg-gray-500/10 text-gray-500 border-gray-500/20'}>
+        {network}
       </Badge>
     );
   };
+
+  const filteredOffers = offers?.filter(offer =>
+    offer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    offer.network.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-teal mx-auto mb-4"></div>
+          <p className="text-foreground-muted">Loading offers...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -44,10 +66,7 @@ export const OfferManager = () => {
             Browse and manage available CPA offers from various networks
           </p>
         </div>
-        <Button className="bg-gradient-brand hover:opacity-90 transition-opacity">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Offer
-        </Button>
+        <AddOfferDialog onOfferAdded={refetch} />
       </div>
 
       {/* Filters */}
@@ -58,6 +77,8 @@ export const OfferManager = () => {
             <Input
               placeholder="Search offers..."
               className="pl-10 bg-background-secondary border-card-border"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Button variant="outline" className="border-card-border">
@@ -69,26 +90,31 @@ export const OfferManager = () => {
 
       {/* Offers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockOffers.map((offer) => (
+        {filteredOffers.length === 0 ? (
+          <div className="col-span-full text-center py-12">
+            <p className="text-foreground-muted mb-4">
+              {searchTerm ? 'No offers found matching your search.' : 'No offers available. Add some offers to get started.'}
+            </p>
+            <AddOfferDialog onOfferAdded={refetch} />
+          </div>
+        ) : (
+          filteredOffers.map((offer) => (
           <Card key={offer.id} className="p-6 bg-gradient-card hover:bg-gradient-hover transition-all duration-200 border-card-border">
             <div className="space-y-4">
               {/* Header */}
               <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-foreground text-lg">{offer.name}</h3>
-                  <div className="flex items-center space-x-2">
-                    {getCategoryBadge(offer.category)}
-                    <Badge variant="outline" className="border-card-border">
-                      {offer.network}
-                    </Badge>
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-foreground text-lg">{offer.name}</h3>
+                    <div className="flex items-center space-x-2">
+                      {getNetworkBadge(offer.network)}
+                    </div>
                   </div>
-                </div>
                 {getStatusBadge(offer.status)}
               </div>
 
-              {/* Description */}
-              <p className="text-sm text-foreground-muted line-clamp-2">
-                {offer.description}
+              {/* Offer URL Preview */}
+              <p className="text-xs text-foreground-muted font-mono bg-background-secondary p-2 rounded truncate">
+                {offer.offer_url}
               </p>
 
               {/* Payout */}
@@ -104,7 +130,7 @@ export const OfferManager = () => {
                 </div>
                 <div className="text-right">
                   <div className="text-sm text-foreground-muted">Daily Cap</div>
-                  <div className="font-medium text-foreground">{offer.dailyCap}</div>
+                  <div className="font-medium text-foreground">{offer.daily_cap || 'Unlimited'}</div>
                 </div>
               </div>
 
@@ -139,7 +165,8 @@ export const OfferManager = () => {
               </div>
             </div>
           </Card>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
