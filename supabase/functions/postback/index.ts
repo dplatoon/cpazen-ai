@@ -1,6 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.214.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { createHash } from "https://deno.land/std@0.168.0/hash/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,9 +57,13 @@ serve(async (req) => {
     // Verify security token if provided
     if (security_token) {
       const secretKey = clickData.campaigns.profiles.secret_key;
-      const expectedToken = createHash("sha256")
-        .update(click_id + secretKey)
-        .toString("hex");
+      
+      // Create hash using Web Crypto API
+      const encoder = new TextEncoder();
+      const data = encoder.encode(click_id + secretKey);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const expectedToken = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       
       if (security_token !== expectedToken) {
         return new Response(JSON.stringify({ error: 'Invalid security token' }), {
