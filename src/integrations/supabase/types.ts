@@ -334,6 +334,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_offer: {
+        Args: { offer_uuid: string }
+        Returns: boolean
+      }
       check_rate_limit: {
         Args: {
           action_name: string
@@ -355,6 +359,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_available_offers: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          countries: string[]
+          currency: string
+          daily_cap: number
+          id: string
+          name: string
+          network: string
+          payout: number
+        }[]
+      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: string
@@ -366,6 +382,14 @@ export type Database = {
       is_system_service: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          event_action: string
+          event_details?: Json
+          event_table: string
+        }
+        Returns: undefined
       }
       rotate_user_secret_key: {
         Args: Record<PropertyKey, never>
