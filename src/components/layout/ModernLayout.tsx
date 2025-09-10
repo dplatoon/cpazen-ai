@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { Footer } from "./Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfileBootstrap } from "@/hooks/useProfileBootstrap";
 import { Navigate } from "react-router-dom";
@@ -43,9 +44,12 @@ export function ModernLayout({ children }: ModernLayoutProps) {
           </header>
 
           {/* Main content */}
-          <main className="flex-1 overflow-auto">
-            <div className="p-6">
+          <main className="flex-1 overflow-auto flex flex-col">
+            <div className="flex-1 p-6">
               {children}
+            </div>
+            <div className="mt-auto">
+              <Footer />
             </div>
           </main>
         </div>

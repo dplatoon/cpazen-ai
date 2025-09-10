@@ -3,17 +3,28 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Suspense, lazy } from "react";
 import { AuthProvider } from "./hooks/useAuth";
-import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import CampaignsPage from "./pages/CampaignsPage";
-import OffersPage from "./pages/OffersPage";
-import IntegrationPage from "./pages/IntegrationPage";
-import ProfilePage from "./pages/ProfilePage";
 import { ModernLayout } from "./components/layout/ModernLayout";
 
+// Lazy load pages for better performance
+const Index = lazy(() => import("./pages/Index"));
+const CampaignsPage = lazy(() => import("./pages/CampaignsPage"));
+const OffersPage = lazy(() => import("./pages/OffersPage"));
+const IntegrationPage = lazy(() => import("./pages/IntegrationPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
+const TermsPage = lazy(() => import("./pages/TermsPage"));
+
 const queryClient = new QueryClient();
+
+const LoadingSpinner = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-teal"></div>
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -22,16 +33,20 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ModernLayout><Index /></ModernLayout>} />
-            <Route path="/campaigns" element={<ModernLayout><CampaignsPage /></ModernLayout>} />
-            <Route path="/offers" element={<ModernLayout><OffersPage /></ModernLayout>} />
-            <Route path="/integration" element={<ModernLayout><IntegrationPage /></ModernLayout>} />
-            <Route path="/profile" element={<ModernLayout><ProfilePage /></ModernLayout>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/" element={<ModernLayout><Index /></ModernLayout>} />
+              <Route path="/campaigns" element={<ModernLayout><CampaignsPage /></ModernLayout>} />
+              <Route path="/offers" element={<ModernLayout><OffersPage /></ModernLayout>} />
+              <Route path="/integration" element={<ModernLayout><IntegrationPage /></ModernLayout>} />
+              <Route path="/profile" element={<ModernLayout><ProfilePage /></ModernLayout>} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
