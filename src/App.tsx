@@ -5,8 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { AuthProvider } from "./hooks/useAuth";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
 import { ModernLayout } from "./components/layout/ModernLayout";
 
 // Lazy load pages for better performance
@@ -17,6 +15,8 @@ const IntegrationPage = lazy(() => import("./pages/IntegrationPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
+const Auth = lazy(() => import("./pages/Auth"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 

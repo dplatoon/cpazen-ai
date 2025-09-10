@@ -113,10 +113,12 @@ export default function Auth() {
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Welcome to <span className="bg-gradient-brand bg-clip-text text-transparent">Cpazen</span>
+            <h1 className="text-4xl font-bold text-foreground mb-2">
+              AI CPA Tracker That Turns Clicks into Profit
             </h1>
-            <p className="text-foreground-muted">AI-Powered CPA Tracking Platform</p>
+            <p className="text-foreground-muted">
+              Welcome to <span className="bg-gradient-brand bg-clip-text text-transparent">Cpazen</span> - AI-Powered CPA Tracking Platform
+            </p>
           </div>
 
           <Card className="bg-gradient-card border-card-border">
