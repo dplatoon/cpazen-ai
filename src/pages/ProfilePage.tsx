@@ -82,7 +82,7 @@ export default function ProfilePage() {
       const newSecretKey = await rotateSecretKey();
       
       // Invalidate and refetch secret key
-      queryClient.invalidateQueries({ queryKey: ['secret-key'] });
+      queryClient.invalidateQueries({ queryKey: ['secret-key-masked'] });
       await refetchSecretKey();
       
       toast({
@@ -220,7 +220,7 @@ export default function ProfilePage() {
           <div>
             <Label>Secret Key</Label>
             <p className="text-sm text-foreground-muted mb-2">
-              Use this key to validate postback requests from networks
+              Use this key to validate postback requests from networks. Only a masked version is shown for security.
             </p>
             <div className="flex items-center space-x-2">
               <Input
@@ -257,7 +257,8 @@ export default function ProfilePage() {
             </div>
             {secretKey && (
               <p className="text-xs text-foreground-muted mt-2">
-                Last rotated: You can rotate your secret key up to 3 times per day for security.
+                For security, only a masked version is displayed. The full key is used server-side for validation.
+                You can rotate your secret key up to 3 times per day.
               </p>
             )}
           </div>

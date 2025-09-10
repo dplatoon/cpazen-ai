@@ -346,6 +346,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      generate_security_token_for_click: {
+        Args: { click_id_param: string }
+        Returns: string
+      }
       get_all_profiles_admin: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -383,6 +387,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_secret_key_masked: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       is_system_service: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -398,6 +406,10 @@ export type Database = {
       rotate_user_secret_key: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      validate_postback_security_token: {
+        Args: { click_id_param: string; provided_token: string }
+        Returns: boolean
       }
     }
     Enums: {

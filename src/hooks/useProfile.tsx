@@ -38,20 +38,20 @@ export function useProfile() {
   });
 }
 
-// Separate hook for secret key with proper security
+// Separate hook for secret key with proper security (returns masked version only)
 export function useSecretKey() {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['secret-key', user?.id],
+    queryKey: ['secret-key-masked', user?.id],
     queryFn: async (): Promise<string | null> => {
       if (!user) return null;
 
       const { data, error } = await supabase
-        .rpc('get_user_secret_key');
+        .rpc('get_user_secret_key_masked');
 
       if (error) {
-        console.error('Error fetching secret key:', error);
+        console.error('Error fetching masked secret key');
         throw error;
       }
 
@@ -74,7 +74,28 @@ export function useRotateSecretKey() {
       .rpc('rotate_user_secret_key');
 
     if (error) {
-      console.error('Error rotating secret key:', error);
+      console.error('Error rotating secret key');
+      throw error;
+    }
+
+    return data;
+  };
+}
+
+// Hook for generating security tokens for specific clicks
+export function useGenerateSecurityToken() {
+  const { user } = useAuth();
+
+  return async (clickId: string): Promise<string> => {
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .rpc('generate_security_token_for_click', {
+        click_id_param: clickId
+      });
+
+    if (error) {
+      console.error('Error generating security token');
       throw error;
     }
 

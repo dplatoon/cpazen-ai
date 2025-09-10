@@ -32,18 +32,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get click and associated campaign/user info
+    // Get click data to verify it exists
     const { data: clickData, error: clickError } = await supabase
       .from('clicks')
-      .select(`
-        *,
-        campaigns (
-          user_id,
-          profiles!inner (
-            secret_key
-          )
-        )
-      `)
+      .select('click_id, campaign_id')
       .eq('click_id', click_id)
       .single();
 
@@ -54,18 +46,23 @@ serve(async (req) => {
       });
     }
 
-    // Verify security token if provided
+    // Verify security token using secure server-side validation
     if (security_token) {
-      const secretKey = clickData.campaigns.profiles.secret_key;
+      const { data: isValid, error: validationError } = await supabase
+        .rpc('validate_postback_security_token', {
+          click_id_param: click_id,
+          provided_token: security_token
+        });
       
-      // Create hash using Web Crypto API
-      const encoder = new TextEncoder();
-      const data = encoder.encode(click_id + secretKey);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const expectedToken = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      if (validationError) {
+        console.error('Error validating security token:', validationError);
+        return new Response(JSON.stringify({ error: 'Security validation failed' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
       
-      if (security_token !== expectedToken) {
+      if (!isValid) {
         return new Response(JSON.stringify({ error: 'Invalid security token' }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -98,8 +95,7 @@ serve(async (req) => {
     console.log('Conversion recorded:', {
       click_id,
       payout,
-      status,
-      user_id: clickData.campaigns.user_id
+      status
     });
 
     return new Response(JSON.stringify({ 

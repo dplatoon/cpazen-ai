@@ -144,7 +144,7 @@ export function IntegrationDocs() {
             </div>
             <p className="text-sm text-muted-foreground mt-2">
               The security token is SHA-256 hash of click_id concatenated with your profile secret key.
-              Find your secret key in your profile settings.
+              Your secret key is kept secure server-side and never exposed to prevent unauthorized access.
             </p>
           </div>
 
