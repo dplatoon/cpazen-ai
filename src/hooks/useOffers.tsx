@@ -32,7 +32,10 @@ export function useOffers() {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(offer => ({
+        ...offer,
+        status: offer.status as 'active' | 'paused' | 'stopped'
+      }));
     },
     enabled: !!user,
   });
