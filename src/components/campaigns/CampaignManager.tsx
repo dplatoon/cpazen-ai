@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTrackingDomain } from "@/hooks/useTrackingDomain";
 import { CreateCampaignDialog } from "./CreateCampaignDialog";
 
 export const CampaignManager = () => {
@@ -19,6 +20,7 @@ export const CampaignManager = () => {
   const queryClient = useQueryClient();
   const { data: campaigns = [], isLoading } = useCampaigns();
   const { data: campaignMetrics = {} } = useCampaignMetrics();
+  const { generateTrackingUrl } = useTrackingDomain();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -71,9 +73,7 @@ export const CampaignManager = () => {
     }
   };
 
-  const generateTrackingLink = (campaignId: string) => {
-    return `https://pxdypbnzlxxvewtwkohn.supabase.co/functions/v1/track-click/${campaignId}?sub={sub_id}`;
-  };
+  // Use the hook's generateTrackingUrl method
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -180,13 +180,13 @@ export const CampaignManager = () => {
                   <td className="p-4">
                     <div className="flex items-center space-x-2">
                       <code className="text-xs bg-background-secondary px-2 py-1 rounded border border-card-border text-brand-teal max-w-xs truncate">
-                        {generateTrackingLink(campaign.id)}
+                        {generateTrackingUrl(campaign.id)}
                       </code>
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         className="h-6 w-6 p-0"
-                        onClick={() => copyToClipboard(generateTrackingLink(campaign.id))}
+                        onClick={() => copyToClipboard(generateTrackingUrl(campaign.id))}
                       >
                         <Copy className="h-3 w-3" />
                       </Button>

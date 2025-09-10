@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Search, Filter, ExternalLink, DollarSign, Globe } from "lucide-react";
 import { useOffers } from "@/hooks/useOffers";
 import { AddOfferDialog } from "./AddOfferDialog";
+import { NetworkBadge } from "./NetworkBadge";
 import { useState } from "react";
 
 export const OfferManager = () => {
@@ -63,7 +64,7 @@ export const OfferManager = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Offer Manager</h1>
           <p className="text-foreground-muted mt-2">
-            Browse and manage available CPA offers from various networks
+            Connect to affiliate networks like MaxBounty, ClickDealer & add offers manually
           </p>
         </div>
         <AddOfferDialog onOfferAdded={refetch} />
@@ -93,7 +94,7 @@ export const OfferManager = () => {
         {filteredOffers.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <p className="text-foreground-muted mb-4">
-              {searchTerm ? 'No offers found matching your search.' : 'No offers available. Add some offers to get started.'}
+              {searchTerm ? 'No offers found matching your search.' : 'Connect to affiliate networks like MaxBounty, ClickDealer, or add offers manually to get started.'}
             </p>
             <AddOfferDialog onOfferAdded={refetch} />
           </div>
@@ -106,7 +107,7 @@ export const OfferManager = () => {
                   <div className="space-y-2">
                     <h3 className="font-semibold text-foreground text-lg">{offer.name}</h3>
                     <div className="flex items-center space-x-2">
-                      {getNetworkBadge(offer.network)}
+                      <NetworkBadge network={offer.network} />
                     </div>
                   </div>
                 {getStatusBadge(offer.status)}

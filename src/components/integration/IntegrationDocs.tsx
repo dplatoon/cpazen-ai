@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Copy, ExternalLink, Code2, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCampaigns } from "@/hooks/useRealData";
+import { useTrackingDomain } from "@/hooks/useTrackingDomain";
+import { TrackingDomainSettings } from "./TrackingDomainSettings";
 
 export function IntegrationDocs() {
   const { toast } = useToast();
   const { data: campaigns } = useCampaigns();
+  const { generateTrackingUrl, getPostbackUrl } = useTrackingDomain();
   
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -17,12 +20,11 @@ export function IntegrationDocs() {
     });
   };
 
-  const trackingDomain = "https://pxdypbnzlxxvewtwkohn.supabase.co/functions/v1/track-click";
-  const postbackUrl = "https://pxdypbnzlxxvewtwkohn.supabase.co/functions/v1/postback";
+  const postbackUrl = getPostbackUrl();
 
   const exampleTrackingUrl = campaigns && campaigns.length > 0 
-    ? `${trackingDomain}/${campaigns[0].id}?sub={sub_id}` 
-    : `${trackingDomain}/{campaign_id}?sub={sub_id}`;
+    ? generateTrackingUrl(campaigns[0].id)
+    : generateTrackingUrl('{campaign_id}').replace('{campaign_id}', '{campaign_id}');
 
   return (
     <div className="space-y-6">
@@ -32,6 +34,9 @@ export function IntegrationDocs() {
           Set up tracking links and postback endpoints for your affiliate campaigns
         </p>
       </div>
+
+      {/* Tracking Domain Settings */}
+      <TrackingDomainSettings />
 
       {/* Tracking Links Section */}
       <Card>
@@ -49,12 +54,12 @@ export function IntegrationDocs() {
             <h4 className="font-semibold mb-2">URL Format:</h4>
             <div className="bg-muted p-3 rounded-lg flex items-center justify-between">
               <code className="text-sm">
-                {trackingDomain}/&#123;campaign_id&#125;?sub=&#123;sub_id&#125;
+                {generateTrackingUrl('{campaign_id}').replace('{campaign_id}', '{campaign_id}')}
               </code>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => copyToClipboard(`${trackingDomain}/{campaign_id}?sub={sub_id}`)}
+                onClick={() => copyToClipboard(generateTrackingUrl('{campaign_id}').replace('{campaign_id}', '{campaign_id}'))}
               >
                 <Copy className="h-4 w-4" />
               </Button>

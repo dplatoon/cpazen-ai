@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { IntegrationDocs } from "@/components/integration/IntegrationDocs";
+import { FeatureAudit } from "@/components/audit/FeatureAudit";
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const IntegrationPage = () => {
   const { user, loading } = useAuth();
@@ -31,7 +33,20 @@ const IntegrationPage = () => {
 
   return (
     <AppLayout>
-      <IntegrationDocs />
+      <Tabs defaultValue="integration" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="integration">Integration Guide</TabsTrigger>
+          <TabsTrigger value="audit">Feature Audit</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="integration" className="space-y-6">
+          <IntegrationDocs />
+        </TabsContent>
+        
+        <TabsContent value="audit" className="space-y-6">
+          <FeatureAudit />
+        </TabsContent>
+      </Tabs>
     </AppLayout>
   );
 };
