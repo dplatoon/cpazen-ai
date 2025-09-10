@@ -1,4 +1,4 @@
-import { BarChart3, Target, Zap, Settings, Users, Globe } from "lucide-react";
+import { BarChart3, Target, Zap, Settings, Users, Globe, Brain, TrendingUp, Bell } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import cpazenLogo from "@/assets/cpazen-logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +20,8 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Campaigns", href: "/campaigns", icon: Target },
   { name: "Offers", href: "/offers", icon: Zap },
+  { name: "AI Tools", href: "/ai-tools", icon: Brain },
+  { name: "Analytics", href: "/analytics", icon: TrendingUp },
   { name: "Integration", href: "/integration", icon: Settings },
   { name: "Profile", href: "/profile", icon: Users },
 ];

@@ -1,5 +1,6 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { EnhancedHeader } from "./EnhancedHeader";
 import { Footer } from "./Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfileBootstrap } from "@/hooks/useProfileBootstrap";
@@ -33,15 +34,7 @@ export function ModernLayout({ children }: ModernLayoutProps) {
         <AppSidebar />
         
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Header with trigger */}
-          <header className="h-14 border-b border-card-border bg-gradient-card flex items-center px-4 sticky top-0 z-40">
-            <SidebarTrigger className="mr-4" />
-            <div className="flex-1 flex items-center justify-between">
-              <div className="text-sm text-foreground-muted">
-                Welcome back!
-              </div>
-            </div>
-          </header>
+          <EnhancedHeader />
 
           {/* Main content */}
           <main className="flex-1 overflow-auto flex flex-col">

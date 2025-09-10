@@ -11,6 +11,8 @@ import { ModernLayout } from "./components/layout/ModernLayout";
 const Index = lazy(() => import("./pages/Index"));
 const CampaignsPage = lazy(() => import("./pages/CampaignsPage"));
 const OffersPage = lazy(() => import("./pages/OffersPage"));
+const AIToolsPage = lazy(() => import("./pages/AIToolsPage"));
+const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage"));
 const IntegrationPage = lazy(() => import("./pages/IntegrationPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
@@ -41,6 +43,8 @@ const App = () => (
               <Route path="/" element={<ModernLayout><Index /></ModernLayout>} />
               <Route path="/campaigns" element={<ModernLayout><CampaignsPage /></ModernLayout>} />
               <Route path="/offers" element={<ModernLayout><OffersPage /></ModernLayout>} />
+              <Route path="/ai-tools" element={<ModernLayout><AIToolsPage /></ModernLayout>} />
+              <Route path="/analytics" element={<ModernLayout><AnalyticsPage /></ModernLayout>} />
               <Route path="/integration" element={<ModernLayout><IntegrationPage /></ModernLayout>} />
               <Route path="/profile" element={<ModernLayout><ProfilePage /></ModernLayout>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
