@@ -16,35 +16,44 @@ export type Database = {
     Tables: {
       campaigns: {
         Row: {
+          cost_model: string | null
           created_at: string
           daily_budget: number | null
           id: string
           name: string
           offer_id: string | null
+          redirect_mode: string | null
           status: string
           total_budget: number | null
+          tracking_domain: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          cost_model?: string | null
           created_at?: string
           daily_budget?: number | null
           id?: string
           name: string
           offer_id?: string | null
+          redirect_mode?: string | null
           status?: string
           total_budget?: number | null
+          tracking_domain?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          cost_model?: string | null
           created_at?: string
           daily_budget?: number | null
           id?: string
           name?: string
           offer_id?: string | null
+          redirect_mode?: string | null
           status?: string
           total_budget?: number | null
+          tracking_domain?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -213,7 +222,6 @@ export type Database = {
           created_at: string
           email: string
           id: string
-          role: string
           secret_key: string
           timezone: string
           updated_at: string
@@ -224,7 +232,6 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
-          role?: string
           secret_key?: string
           timezone?: string
           updated_at?: string
@@ -235,10 +242,30 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
-          role?: string
           secret_key?: string
           timezone?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -269,10 +296,21 @@ export type Database = {
         }[]
       }
       get_user_secret_key_masked: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       rotate_user_secret_key: { Args: never; Returns: string }
+      validate_postback_security_token: {
+        Args: { _click_id: string; _token: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "affiliate" | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -399,6 +437,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "affiliate", "manager"],
+    },
   },
 } as const

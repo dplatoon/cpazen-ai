@@ -6,7 +6,6 @@ export interface Profile {
   id: string;
   user_id: string;
   email: string;
-  role: string;
   company_name?: string;
   timezone: string;
   created_at: string;
@@ -23,7 +22,7 @@ export function useProfile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, user_id, email, role, company_name, timezone, created_at, updated_at')
+        .select('id, user_id, email, company_name, timezone, created_at, updated_at')
         .eq('user_id', user.id)
         .maybeSingle();
 

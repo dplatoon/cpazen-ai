@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Copy, Eye, EyeOff, User, Key, Settings, Save, RotateCcw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useSecretKey, useRotateSecretKey } from "@/hooks/useProfile";
+import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,6 +22,7 @@ const timezones = [
 export default function ProfilePage() {
   const { user } = useAuth();
   const { data: profile, refetch } = useProfile();
+  const { data: userRole } = useUserRole();
   const { data: secretKey, refetch: refetchSecretKey } = useSecretKey();
   const rotateSecretKey = useRotateSecretKey();
   const { toast } = useToast();
@@ -185,7 +187,7 @@ export default function ProfilePage() {
           <div className="space-y-2">
             <Label>Role</Label>
             <Input
-              value={profile?.role || "affiliate"}
+              value={userRole || "affiliate"}
               disabled
               className="bg-background-secondary/50 border-card-border"
             />
