@@ -47,9 +47,12 @@ export function useCreateOffer() {
 
   return useMutation({
     mutationFn: async (offerData: Omit<Offer, 'id' | 'created_at' | 'updated_at'>) => {
+      if (!user) throw new Error('User not authenticated');
+      
       const { data, error } = await supabase
         .from('offers')
-        .insert({
+        .insert([{
+          user_id: user.id,
           name: offerData.name,
           network: offerData.network,
           offer_url: offerData.offer_url,
@@ -58,7 +61,7 @@ export function useCreateOffer() {
           countries: offerData.countries,
           daily_cap: offerData.daily_cap,
           status: offerData.status,
-        })
+        }])
         .select()
         .single();
 

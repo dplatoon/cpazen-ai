@@ -56,14 +56,15 @@ export const RecentActivity = ({ filters }: RecentActivityProps) => {
 
       recentClicks?.forEach(click => {
         // Add conversion activities
-        if (click.conversions && click.conversions.payout) {
+        const conversion = click.conversions && click.conversions.length > 0 ? click.conversions[0] : null;
+        if (conversion && conversion.payout) {
           activities.push({
             id: `conv-${click.id}`,
             type: 'conversion',
             title: 'New Conversion',
             description: `${click.campaigns.name} - ${click.campaigns.offers?.name || 'Unknown Offer'}`,
-            timestamp: formatRelativeTime(click.conversions.created_at || click.created_at),
-            value: click.conversions.payout
+            timestamp: formatRelativeTime(conversion.created_at || click.created_at),
+            value: conversion.payout
           });
         }
 

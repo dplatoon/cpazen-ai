@@ -16,38 +16,35 @@ export type Database = {
     Tables: {
       campaigns: {
         Row: {
-          cost_model: string
           created_at: string
+          daily_budget: number | null
           id: string
           name: string
-          offer_id: string
-          redirect_mode: string
+          offer_id: string | null
           status: string
-          tracking_domain: string | null
+          total_budget: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          cost_model?: string
           created_at?: string
+          daily_budget?: number | null
           id?: string
           name: string
-          offer_id: string
-          redirect_mode?: string
+          offer_id?: string | null
           status?: string
-          tracking_domain?: string | null
+          total_budget?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          cost_model?: string
           created_at?: string
+          daily_budget?: number | null
           id?: string
           name?: string
-          offer_id?: string
-          redirect_mode?: string
+          offer_id?: string | null
           status?: string
-          tracking_domain?: string | null
+          total_budget?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -63,46 +60,49 @@ export type Database = {
       }
       clicks: {
         Row: {
-          bot_score: number | null
           browser: string | null
           campaign_id: string
-          click_id: string
+          city: string | null
           country: string | null
           created_at: string
+          device: string | null
           id: string
-          ip: unknown | null
+          ip_address: string | null
+          is_bot: boolean | null
           os: string | null
-          referrer: string | null
           sub_id: string | null
           user_agent: string | null
+          user_id: string
         }
         Insert: {
-          bot_score?: number | null
           browser?: string | null
           campaign_id: string
-          click_id?: string
+          city?: string | null
           country?: string | null
           created_at?: string
+          device?: string | null
           id?: string
-          ip?: unknown | null
+          ip_address?: string | null
+          is_bot?: boolean | null
           os?: string | null
-          referrer?: string | null
           sub_id?: string | null
           user_agent?: string | null
+          user_id: string
         }
         Update: {
-          bot_score?: number | null
           browser?: string | null
           campaign_id?: string
-          click_id?: string
+          city?: string | null
           country?: string | null
           created_at?: string
+          device?: string | null
           id?: string
-          ip?: unknown | null
+          ip_address?: string | null
+          is_bot?: boolean | null
           os?: string | null
-          referrer?: string | null
           sub_id?: string | null
           user_agent?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -116,39 +116,49 @@ export type Database = {
       }
       conversions: {
         Row: {
+          campaign_id: string
           click_id: string
           created_at: string
+          currency: string
           id: string
-          network_postback_raw: Json | null
           payout: number
           status: string
-          updated_at: string
+          user_id: string
         }
         Insert: {
+          campaign_id: string
           click_id: string
           created_at?: string
+          currency?: string
           id?: string
-          network_postback_raw?: Json | null
-          payout?: number
+          payout: number
           status?: string
-          updated_at?: string
+          user_id: string
         }
         Update: {
+          campaign_id?: string
           click_id?: string
           created_at?: string
+          currency?: string
           id?: string
-          network_postback_raw?: Json | null
           payout?: number
           status?: string
-          updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
+            foreignKeyName: "conversions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conversions_click_id_fkey"
             columns: ["click_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "clicks"
-            referencedColumns: ["click_id"]
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -160,11 +170,12 @@ export type Database = {
           daily_cap: number | null
           id: string
           name: string
-          network: string
+          network: string | null
           offer_url: string
           payout: number
           status: string
           updated_at: string
+          user_id: string
         }
         Insert: {
           countries?: string[] | null
@@ -173,11 +184,12 @@ export type Database = {
           daily_cap?: number | null
           id?: string
           name: string
-          network: string
+          network?: string | null
           offer_url: string
-          payout?: number
+          payout: number
           status?: string
           updated_at?: string
+          user_id: string
         }
         Update: {
           countries?: string[] | null
@@ -186,11 +198,12 @@ export type Database = {
           daily_cap?: number | null
           id?: string
           name?: string
-          network?: string
+          network?: string | null
           offer_url?: string
           payout?: number
           status?: string
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -202,7 +215,7 @@ export type Database = {
           id: string
           role: string
           secret_key: string
-          timezone: string | null
+          timezone: string
           updated_at: string
           user_id: string
         }
@@ -213,7 +226,7 @@ export type Database = {
           id?: string
           role?: string
           secret_key?: string
-          timezone?: string | null
+          timezone?: string
           updated_at?: string
           user_id: string
         }
@@ -224,108 +237,9 @@ export type Database = {
           id?: string
           role?: string
           secret_key?: string
-          timezone?: string | null
+          timezone?: string
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      rate_limits: {
-        Row: {
-          action: string
-          count: number | null
-          created_at: string | null
-          id: string
-          user_id: string
-          window_start: string | null
-        }
-        Insert: {
-          action: string
-          count?: number | null
-          created_at?: string | null
-          id?: string
-          user_id: string
-          window_start?: string | null
-        }
-        Update: {
-          action?: string
-          count?: number | null
-          created_at?: string | null
-          id?: string
-          user_id?: string
-          window_start?: string | null
-        }
-        Relationships: []
-      }
-      rules: {
-        Row: {
-          action_json: Json
-          active: boolean
-          condition_json: Json
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          action_json: Json
-          active?: boolean
-          condition_json: Json
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          action_json?: Json
-          active?: boolean
-          condition_json?: Json
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      security_audit_log: {
-        Row: {
-          action: string
-          created_at: string | null
-          details: Json | null
-          id: string
-          ip_address: unknown | null
-          record_id: string | null
-          table_name: string
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          action: string
-          created_at?: string | null
-          details?: Json | null
-          id?: string
-          ip_address?: unknown | null
-          record_id?: string | null
-          table_name: string
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          action?: string
-          created_at?: string | null
-          details?: Json | null
-          id?: string
-          ip_address?: unknown | null
-          record_id?: string | null
-          table_name?: string
-          user_agent?: string | null
-          user_id?: string | null
         }
         Relationships: []
       }
@@ -334,37 +248,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_access_offer: {
-        Args: { offer_uuid: string }
-        Returns: boolean
-      }
-      check_rate_limit: {
-        Args: {
-          action_name: string
-          max_requests?: number
-          window_minutes?: number
-        }
-        Returns: boolean
-      }
       generate_security_token_for_click: {
         Args: { click_id_param: string }
         Returns: string
       }
-      get_all_profiles_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          company_name: string
-          created_at: string
-          email: string
-          id: string
-          role: string
-          timezone: string
-          updated_at: string
-          user_id: string
-        }[]
-      }
       get_available_offers: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           countries: string[]
           created_at: string
@@ -379,38 +268,8 @@ export type Database = {
           updated_at: string
         }[]
       }
-      get_user_role: {
-        Args: { user_uuid: string }
-        Returns: string
-      }
-      get_user_secret_key: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_user_secret_key_masked: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      is_system_service: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      log_security_event: {
-        Args: {
-          event_action: string
-          event_details?: Json
-          event_table: string
-        }
-        Returns: undefined
-      }
-      rotate_user_secret_key: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      validate_postback_security_token: {
-        Args: { click_id_param: string; provided_token: string }
-        Returns: boolean
-      }
+      get_user_secret_key_masked: { Args: never; Returns: string }
+      rotate_user_secret_key: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const offerSchema = z.object({
   name: z.string().min(1, 'Offer name is required'),
@@ -40,6 +41,7 @@ export const ManualOfferForm = ({ onSuccess }: ManualOfferFormProps) => {
   const [countryInput, setCountryInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const form = useForm<OfferFormData>({
     resolver: zodResolver(offerSchema),
@@ -67,9 +69,19 @@ export const ManualOfferForm = ({ onSuccess }: ManualOfferFormProps) => {
   const handleSubmit = async (data: OfferFormData) => {
     setIsLoading(true);
     try {
+      if (!user) {
+        toast({
+          title: 'Error',
+          description: 'You must be logged in to add offers.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('offers')
-        .insert({
+        .insert([{
+          user_id: user.id,
           name: data.name,
           network: data.network,
           offer_url: data.offer_url,
@@ -78,7 +90,7 @@ export const ManualOfferForm = ({ onSuccess }: ManualOfferFormProps) => {
           countries: countries,
           daily_cap: data.daily_cap || null,
           status: data.status,
-        });
+        }]);
 
       if (error) throw error;
 

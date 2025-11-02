@@ -55,9 +55,10 @@ export function useCampaignMetrics() {
 
         metrics[campaignId].clicks++;
         
-        if (click.conversions && click.conversions.payout) {
+        const conversion = click.conversions && click.conversions.length > 0 ? click.conversions[0] : null;
+        if (conversion && conversion.payout) {
           metrics[campaignId].conversions++;
-          metrics[campaignId].revenue += click.conversions.payout;
+          metrics[campaignId].revenue += conversion.payout;
         }
       });
 
