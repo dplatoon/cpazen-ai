@@ -87,7 +87,7 @@ serve(async (req) => {
         botScore = parseInt(data.choices[0]?.message?.content?.trim()) || 50;
         console.log(`AI bot detection for ${click_id}: ${botScore}`);
       } catch (error) {
-        console.error('AI bot detection failed, using fallback:', error);
+        console.error('[INTERNAL] AI detection failed, using fallback:', error);
         botScore = basicBotDetection(user_agent, ip);
       }
     }
@@ -100,7 +100,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in bot-detection:', error);
+    console.error('[INTERNAL] Bot detection error:', error);
     
     // Fallback detection on error
     try {
@@ -114,10 +114,10 @@ serve(async (req) => {
         });
       }
     } catch (fallbackError) {
-      console.error('Fallback detection also failed:', fallbackError);
+      console.error('[INTERNAL] Fallback detection failed:', fallbackError);
     }
 
-    return new Response(JSON.stringify({ error: 'Bot detection failed' }), {
+    return new Response(JSON.stringify({ error: 'Operation failed' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
@@ -181,11 +181,11 @@ async function updateBotScore(clickId: string, botScore: number) {
       .eq('click_id', clickId);
 
     if (error) {
-      console.error('Error updating bot score:', error);
+      console.error('[INTERNAL] Bot score update failed:', error);
     } else {
       console.log(`Updated bot score for click ${clickId}: ${botScore}`);
     }
   } catch (error) {
-    console.error('Error updating bot score:', error);
+    console.error('[INTERNAL] Bot score update error:', error);
   }
 }

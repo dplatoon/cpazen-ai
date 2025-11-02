@@ -67,6 +67,30 @@ export type Database = {
           },
         ]
       }
+      click_rate_limits: {
+        Row: {
+          click_count: number
+          created_at: string
+          id: string
+          ip_address: string
+          updated_at: string
+        }
+        Insert: {
+          click_count?: number
+          created_at?: string
+          id?: string
+          ip_address: string
+          updated_at?: string
+        }
+        Update: {
+          click_count?: number
+          created_at?: string
+          id?: string
+          ip_address?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clicks: {
         Row: {
           browser: string | null
@@ -275,6 +299,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_rate_limits: { Args: never; Returns: undefined }
       generate_security_token_for_click: {
         Args: { click_id_param: string }
         Returns: string

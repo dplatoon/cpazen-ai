@@ -21,7 +21,7 @@ serve(async (req) => {
     } = await req.json();
 
     if (!click_id) {
-      return new Response(JSON.stringify({ error: 'click_id is required' }), {
+      return new Response(JSON.stringify({ error: 'Invalid request parameters' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -40,7 +40,8 @@ serve(async (req) => {
       .single();
 
     if (clickError || !clickData) {
-      return new Response(JSON.stringify({ error: 'Click not found' }), {
+      console.error('[INTERNAL] Click lookup failed:', clickError);
+      return new Response(JSON.stringify({ error: 'Invalid click reference' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -55,15 +56,15 @@ serve(async (req) => {
         });
       
       if (validationError) {
-        console.error('Error validating security token:', validationError);
-        return new Response(JSON.stringify({ error: 'Security validation failed' }), {
+        console.error('[INTERNAL] Token validation error:', validationError);
+        return new Response(JSON.stringify({ error: 'Authentication failed' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
       
       if (!isValid) {
-        return new Response(JSON.stringify({ error: 'Invalid security token' }), {
+        return new Response(JSON.stringify({ error: 'Authentication failed' }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -85,8 +86,8 @@ serve(async (req) => {
       .single();
 
     if (conversionError) {
-      console.error('Error upserting conversion:', conversionError);
-      return new Response(JSON.stringify({ error: 'Failed to record conversion' }), {
+      console.error('[INTERNAL] Conversion recording failed:', conversionError);
+      return new Response(JSON.stringify({ error: 'Operation failed' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -107,8 +108,8 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in postback:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+    console.error('[INTERNAL] Unexpected error:', error);
+    return new Response(JSON.stringify({ error: 'Internal error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

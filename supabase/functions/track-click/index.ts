@@ -11,7 +11,41 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                   req.headers.get('x-real-ip') || 
+                   'unknown';
+
   try {
+    // Rate limiting check (10 clicks per minute per IP)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
+    const { data: recentClicks, error: rateLimitError } = await supabaseAdmin
+      .from('click_rate_limits')
+      .select('click_count')
+      .eq('ip_address', clientIp)
+      .gte('created_at', oneMinuteAgo);
+
+    if (rateLimitError) {
+      console.error('[INTERNAL] Rate limit check failed:', rateLimitError);
+    }
+
+    const totalClicks = recentClicks?.reduce((sum, record) => sum + record.click_count, 0) || 0;
+    if (totalClicks >= 10) {
+      return new Response(JSON.stringify({ error: 'Too many requests' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Record this request for rate limiting
+    await supabaseAdmin
+      .from('click_rate_limits')
+      .insert({ ip_address: clientIp, click_count: 1 });
+
     const url = new URL(req.url);
     const campaignId = url.pathname.split('/').pop();
     const subId = url.searchParams.get('sub');
@@ -43,9 +77,10 @@ serve(async (req) => {
       .single();
 
     if (campaignError || !campaign) {
-      return new Response('Campaign not found or inactive', { 
+      console.error('[INTERNAL] Campaign lookup failed:', campaignError);
+      return new Response(JSON.stringify({ error: 'Invalid request' }), { 
         status: 404,
-        headers: corsHeaders 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -91,7 +126,7 @@ serve(async (req) => {
       .single();
 
     if (clickError) {
-      console.error('Error inserting click:', clickError);
+      console.error('[INTERNAL] Click insertion failed:', clickError);
       // Still redirect even if tracking fails
     }
 
@@ -112,7 +147,7 @@ serve(async (req) => {
           ip: ip
         })
       }).catch(error => {
-        console.error('Bot detection failed:', error);
+        console.error('[INTERNAL] Bot detection failed:', error);
       });
     }
 
@@ -161,10 +196,10 @@ serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('Error in track-click:', error);
-    return new Response('Internal Server Error', {
+    console.error('[INTERNAL] Unexpected error:', error);
+    return new Response(JSON.stringify({ error: 'Internal error' }), { 
       status: 500,
-      headers: corsHeaders
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
