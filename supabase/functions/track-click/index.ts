@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.214.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,12 +51,21 @@ serve(async (req) => {
     const campaignId = url.pathname.split('/').pop();
     const subId = url.searchParams.get('sub');
     
-    if (!campaignId) {
-      return new Response('Campaign ID required', { 
+    // Validate inputs
+    const inputSchema = z.object({
+      campaignId: z.string().uuid('Invalid campaign ID format'),
+      subId: z.string().max(200).regex(/^[a-zA-Z0-9_-]*$/, 'Invalid sub_id format').optional().nullable()
+    });
+
+    const validationResult = inputSchema.safeParse({ campaignId, subId });
+    if (!validationResult.success) {
+      return new Response(JSON.stringify({ error: 'Invalid request parameters' }), { 
         status: 400,
-        headers: corsHeaders 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    const { campaignId: validCampaignId, subId: validSubId } = validationResult.data;
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -72,7 +82,7 @@ serve(async (req) => {
           status
         )
       `)
-      .eq('id', campaignId)
+      .eq('id', validCampaignId)
       .eq('status', 'active')
       .single();
 
@@ -84,12 +94,12 @@ serve(async (req) => {
       });
     }
 
-    // Extract request info for tracking
-    const userAgent = req.headers.get('user-agent') || '';
+    // Extract request info for tracking with length limits
+    const userAgent = (req.headers.get('user-agent') || '').slice(0, 500);
     const ip = req.headers.get('x-forwarded-for') || 
               req.headers.get('x-real-ip') || 
               'unknown';
-    const referrer = req.headers.get('referer') || '';
+    const referrer = (req.headers.get('referer') || '').slice(0, 500);
     
     // Parse user agent info (simplified)
     const getOSFromUA = (ua: string): string => {
@@ -113,13 +123,13 @@ serve(async (req) => {
     const { data: clickData, error: clickError } = await supabase
       .from('clicks')
       .insert({
-        campaign_id: campaignId,
+        campaign_id: validCampaignId,
         ip: ip,
         user_agent: userAgent,
         os: getOSFromUA(userAgent),
         browser: getBrowserFromUA(userAgent),
         referrer: referrer,
-        sub_id: subId,
+        sub_id: validSubId,
         bot_score: 0 // Will be updated by bot detection
       })
       .select('click_id')
@@ -159,12 +169,12 @@ serve(async (req) => {
     }
     
     // Add sub_id if provided
-    if (subId) {
+    if (validSubId) {
       const separator = redirectUrl.includes('?') ? '&' : '?';
-      redirectUrl += `${separator}sub_id=${encodeURIComponent(subId)}`;
+      redirectUrl += `${separator}sub_id=${encodeURIComponent(validSubId)}`;
     }
 
-    console.log(`Click tracked: ${clickId} for campaign ${campaignId}`);
+    console.log(`Click tracked: ${clickId} for campaign ${validCampaignId}`);
 
     // Perform redirect based on campaign settings
     if (campaign.redirect_mode === 'meta') {

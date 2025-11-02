@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.214.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,14 +25,24 @@ serve(async (req) => {
       });
     }
 
-    const { click_id, user_agent, ip } = await req.json();
+    const requestBody = await req.json();
+    
+    // Validate inputs with schema
+    const botDetectionSchema = z.object({
+      click_id: z.string().uuid('Invalid click_id format'),
+      user_agent: z.string().min(10, 'User agent too short').max(1000, 'User agent too long'),
+      ip: z.string().min(1, 'IP address required')
+    });
 
-    if (!click_id || !user_agent || !ip) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+    const validationResult = botDetectionSchema.safeParse(requestBody);
+    if (!validationResult.success) {
+      return new Response(JSON.stringify({ error: 'Invalid request parameters' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    const { click_id, user_agent, ip } = validationResult.data;
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     let botScore: number;
