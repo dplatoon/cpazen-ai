@@ -273,6 +273,33 @@ export type Database = {
         }
         Relationships: []
       }
+      secret_key_rotations: {
+        Row: {
+          id: string
+          ip_address: string | null
+          old_key_hash: string
+          rotated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          ip_address?: string | null
+          old_key_hash: string
+          rotated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          ip_address?: string | null
+          old_key_hash?: string
+          rotated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
