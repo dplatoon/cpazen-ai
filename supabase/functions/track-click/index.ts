@@ -124,7 +124,8 @@ serve(async (req) => {
       .from('clicks')
       .insert({
         campaign_id: validCampaignId,
-        ip: ip,
+        user_id: campaign.user_id,
+        ip_address: ip,
         user_agent: userAgent,
         os: getOSFromUA(userAgent),
         browser: getBrowserFromUA(userAgent),

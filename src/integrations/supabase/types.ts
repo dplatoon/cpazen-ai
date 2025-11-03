@@ -93,9 +93,11 @@ export type Database = {
       }
       clicks: {
         Row: {
+          bot_score: number | null
           browser: string | null
           campaign_id: string
           city: string | null
+          click_id: string | null
           country: string | null
           created_at: string
           device: string | null
@@ -103,14 +105,17 @@ export type Database = {
           ip_address: string | null
           is_bot: boolean | null
           os: string | null
+          referrer: string | null
           sub_id: string | null
           user_agent: string | null
           user_id: string
         }
         Insert: {
+          bot_score?: number | null
           browser?: string | null
           campaign_id: string
           city?: string | null
+          click_id?: string | null
           country?: string | null
           created_at?: string
           device?: string | null
@@ -118,14 +123,17 @@ export type Database = {
           ip_address?: string | null
           is_bot?: boolean | null
           os?: string | null
+          referrer?: string | null
           sub_id?: string | null
           user_agent?: string | null
           user_id: string
         }
         Update: {
+          bot_score?: number | null
           browser?: string | null
           campaign_id?: string
           city?: string | null
+          click_id?: string | null
           country?: string | null
           created_at?: string
           device?: string | null
@@ -133,6 +141,7 @@ export type Database = {
           ip_address?: string | null
           is_bot?: boolean | null
           os?: string | null
+          referrer?: string | null
           sub_id?: string | null
           user_agent?: string | null
           user_id?: string
@@ -154,6 +163,7 @@ export type Database = {
           created_at: string
           currency: string
           id: string
+          network_postback_raw: Json | null
           payout: number
           status: string
           user_id: string
@@ -164,6 +174,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          network_postback_raw?: Json | null
           payout: number
           status?: string
           user_id: string
@@ -174,6 +185,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          network_postback_raw?: Json | null
           payout?: number
           status?: string
           user_id?: string
