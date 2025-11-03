@@ -1,15 +1,14 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-CWR41GM009"></script>
+    <!-- Google tag (gtag.js) - Deferred for better performance -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-CWR41GM009');
     </script>
+    <script defer src="https://www.googletagmanager.com/gtag/js?id=G-CWR41GM009"></script>
     
     <!-- Basic Meta Tags -->
     <meta charset="UTF-8" />
@@ -71,10 +70,15 @@
     <meta name="twitter:site" content="@cpazen" />
     
     <!-- Performance Optimizations: Preconnect to Critical Origins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://pxdypbnzlxxvewtwkohn.supabase.co" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://lovable.dev" />
+    
+    <!-- Preload critical resources -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+    <link rel="preload" href="/src/index.css" as="style" />
     
     <!-- Structured Data (JSON-LD) - Software Application -->
     <script type="application/ld+json">
