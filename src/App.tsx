@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { AuthProvider } from "./hooks/useAuth";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ModernLayout } from "./components/layout/ModernLayout";
 
 // Lazy load pages for better performance
@@ -15,6 +16,8 @@ const AIToolsPage = lazy(() => import("./pages/AIToolsPage"));
 const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage"));
 const IntegrationPage = lazy(() => import("./pages/IntegrationPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const DemoPage = lazy(() => import("./pages/DemoPage"));
+const TestingPage = lazy(() => import("./pages/TestingPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -29,12 +32,13 @@ const LoadingSpinner = () => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               <Route path="/auth" element={<Auth />} />
@@ -47,6 +51,8 @@ const App = () => (
               <Route path="/analytics" element={<ModernLayout><AnalyticsPage /></ModernLayout>} />
               <Route path="/integration" element={<ModernLayout><IntegrationPage /></ModernLayout>} />
               <Route path="/profile" element={<ModernLayout><ProfilePage /></ModernLayout>} />
+              <Route path="/demo" element={<ModernLayout><DemoPage /></ModernLayout>} />
+              <Route path="/testing" element={<ModernLayout><TestingPage /></ModernLayout>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
@@ -55,6 +61,7 @@ const App = () => (
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
