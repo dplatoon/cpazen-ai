@@ -1,6 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { ModernLayout } from "@/components/layout/ModernLayout";
-import { AIOptimizer } from "@/components/ai/AIOptimizer";
+import { AICampaignOptimizer } from "@/components/ai/AICampaignOptimizer";
+import { AISupportChat } from "@/components/ai/AISupportChat";
+import { AIOfferDescriptionGenerator } from "@/components/ai/AIOfferDescriptionGenerator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 
@@ -39,7 +42,22 @@ const AIToolsPage = () => {
           </p>
         </div>
         
-        <AIOptimizer />
+        <Tabs defaultValue="optimizer" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="optimizer">Campaign Optimizer</TabsTrigger>
+            <TabsTrigger value="chat">Support Chat</TabsTrigger>
+            <TabsTrigger value="generator">Offer Generator</TabsTrigger>
+          </TabsList>
+          <TabsContent value="optimizer" className="mt-6">
+            <AICampaignOptimizer />
+          </TabsContent>
+          <TabsContent value="chat" className="mt-6">
+            <AISupportChat />
+          </TabsContent>
+          <TabsContent value="generator" className="mt-6">
+            <AIOfferDescriptionGenerator />
+          </TabsContent>
+        </Tabs>
       </div>
     </ModernLayout>
   );

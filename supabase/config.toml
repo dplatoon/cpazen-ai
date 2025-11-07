@@ -1,1 +1,10 @@
 project_id = "rdajybqalmsdycxsruon"
+
+[functions.ai-campaign-optimizer]
+verify_jwt = true
+
+[functions.ai-chat]
+verify_jwt = true
+
+[functions.ai-offer-description]
+verify_jwt = true
