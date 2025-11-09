@@ -18,6 +18,8 @@ const IntegrationPage = lazy(() => import("./pages/IntegrationPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const DemoPage = lazy(() => import("./pages/DemoPage"));
 const TestingPage = lazy(() => import("./pages/TestingPage"));
+const MonitoringPage = lazy(() => import("./pages/MonitoringPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -53,6 +55,8 @@ const App = () => (
               <Route path="/profile" element={<ModernLayout><ProfilePage /></ModernLayout>} />
               <Route path="/demo" element={<ModernLayout><DemoPage /></ModernLayout>} />
               <Route path="/testing" element={<ModernLayout><TestingPage /></ModernLayout>} />
+              <Route path="/monitoring" element={<ModernLayout><MonitoringPage /></ModernLayout>} />
+              <Route path="/settings" element={<ModernLayout><SettingsPage /></ModernLayout>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

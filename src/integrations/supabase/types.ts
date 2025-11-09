@@ -207,6 +207,42 @@ export type Database = {
           },
         ]
       }
+      notification_logs: {
+        Row: {
+          email_to: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          notification_type: string
+          sent_at: string
+          status: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          email_to: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          notification_type: string
+          sent_at?: string
+          status?: string
+          subject: string
+          user_id: string
+        }
+        Update: {
+          email_to?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          notification_type?: string
+          sent_at?: string
+          status?: string
+          subject?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       offers: {
         Row: {
           countries: string[] | null
@@ -258,6 +294,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          notification_preferences: Json | null
           secret_key: string
           timezone: string
           updated_at: string
@@ -268,6 +305,7 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          notification_preferences?: Json | null
           secret_key?: string
           timezone?: string
           updated_at?: string
@@ -278,6 +316,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          notification_preferences?: Json | null
           secret_key?: string
           timezone?: string
           updated_at?: string
