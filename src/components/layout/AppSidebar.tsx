@@ -1,7 +1,8 @@
-import { BarChart3, Target, Zap, Settings, Users, Globe, Brain, TrendingUp, Bell } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { BarChart3, Target, Zap, Settings, Users, Globe, Brain, TrendingUp, Bell, Shield } from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import cpazenLogo from "@/assets/cpazen-logo.png";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   Sidebar,
   SidebarContent,
@@ -26,10 +27,16 @@ const navigation = [
   { name: "Profile", href: "/profile", icon: Users },
 ];
 
+const adminNavigation = [
+  { name: "Admin", href: "/admin", icon: Shield },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: userRole } = useUserRole();
   const currentPath = location.pathname;
   const isCollapsed = state === "collapsed";
 
@@ -74,9 +81,35 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {userRole === 'admin' && (
+            <SidebarGroup>
+              <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
+                Admin
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {adminNavigation.map((item) => (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton asChild isActive={isActive(item.href)}>
+                        <NavLink 
+                          to={item.href} 
+                          end
+                          className={getNavClass}
+                        >
+                          <item.icon className="h-5 w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="truncate">{item.name}</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+        </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="flex items-center space-x-3">

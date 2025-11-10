@@ -160,6 +160,22 @@ serve(async (req) => {
       }).catch(error => {
         console.error('[INTERNAL] Bot detection failed:', error);
       });
+
+      // Trigger fraud detection (fire and forget)
+      fetch(`${supabaseUrl}/functions/v1/fraud-detection`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          clickId: clickId,
+          userId: campaign.user_id,
+          campaignId: validCampaignId,
+          ipAddress: ip,
+          userAgent: userAgent,
+        }),
+      }).catch(err => console.error('Error triggering fraud detection:', err));
     }
 
     // Build redirect URL with click_id macro replacement

@@ -82,11 +82,28 @@ serve(async (req) => {
       });
     }
 
+    // Get click details
+    const { data: click, error: clickError } = await supabase
+      .from('clicks')
+      .select('user_id, campaign_id')
+      .eq('click_id', click_id)
+      .single();
+
+    if (clickError || !click) {
+      console.error('[INTERNAL] Click lookup failed:', clickError);
+      return new Response(JSON.stringify({ error: 'Invalid click reference' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Upsert conversion
     const { data: conversion, error: conversionError } = await supabase
       .from('conversions')
       .upsert({
         click_id: click_id,
+        campaign_id: click.campaign_id,
+        user_id: click.user_id,
         payout: payout,
         status: status,
         network_postback_raw: rawData
@@ -109,6 +126,27 @@ serve(async (req) => {
       payout,
       status
     });
+
+    // Trigger webhooks for conversion event (fire and forget)
+    fetch(`${supabaseUrl}/functions/v1/webhook-handler`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+      body: JSON.stringify({
+        userId: click.user_id,
+        eventType: 'conversion',
+        data: {
+          conversion_id: conversion.id,
+          click_id: click_id,
+          campaign_id: click.campaign_id,
+          payout,
+          status,
+          timestamp: new Date().toISOString(),
+        },
+      }),
+    }).catch(err => console.error('Error triggering webhook:', err));
 
     return new Response(JSON.stringify({ 
       success: true, 

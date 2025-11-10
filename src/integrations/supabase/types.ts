@@ -101,6 +101,8 @@ export type Database = {
           country: string | null
           created_at: string
           device: string | null
+          fraud_indicators: Json | null
+          fraud_score: number | null
           id: string
           ip_address: string | null
           is_bot: boolean | null
@@ -119,6 +121,8 @@ export type Database = {
           country?: string | null
           created_at?: string
           device?: string | null
+          fraud_indicators?: Json | null
+          fraud_score?: number | null
           id?: string
           ip_address?: string | null
           is_bot?: boolean | null
@@ -137,6 +141,8 @@ export type Database = {
           country?: string | null
           created_at?: string
           device?: string | null
+          fraud_indicators?: Json | null
+          fraud_score?: number | null
           id?: string
           ip_address?: string | null
           is_bot?: boolean | null
@@ -200,6 +206,66 @@ export type Database = {
           },
           {
             foreignKeyName: "conversions_click_id_fkey"
+            columns: ["click_id"]
+            isOneToOne: false
+            referencedRelation: "clicks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fraud_alerts: {
+        Row: {
+          alert_type: string
+          campaign_id: string | null
+          click_id: string | null
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          campaign_id?: string | null
+          click_id?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          campaign_id?: string | null
+          click_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fraud_alerts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fraud_alerts_click_id_fkey"
             columns: ["click_id"]
             isOneToOne: false
             referencedRelation: "clicks"
@@ -368,6 +434,83 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_logs: {
+        Row: {
+          delivered_at: string
+          event_type: string
+          id: string
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+          user_id: string
+          webhook_id: string
+        }
+        Insert: {
+          delivered_at?: string
+          event_type: string
+          id?: string
+          payload: Json
+          response_body?: string | null
+          response_status?: number | null
+          user_id: string
+          webhook_id: string
+        }
+        Update: {
+          delivered_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          user_id?: string
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhooks: {
+        Row: {
+          created_at: string
+          events: string[]
+          id: string
+          is_active: boolean
+          name: string
+          secret_key: string
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          name: string
+          secret_key?: string
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          name?: string
+          secret_key?: string
+          updated_at?: string
+          url?: string
           user_id?: string
         }
         Relationships: []
