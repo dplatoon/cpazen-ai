@@ -1,4 +1,4 @@
-import { BarChart3, Target, Zap, Settings, Users, Globe, Brain, TrendingUp, Bell, Shield } from "lucide-react";
+import { BarChart3, Target, Zap, Settings, Users, Globe, Brain, TrendingUp, Bell, Shield, ClipboardCheck } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import cpazenLogo from "@/assets/cpazen-logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,6 +29,7 @@ const navigation = [
 
 const adminNavigation = [
   { name: "Admin", href: "/admin", icon: Shield },
+  { name: "Project Audit", href: "/audit", icon: ClipboardCheck },
 ];
 
 export function AppSidebar() {
