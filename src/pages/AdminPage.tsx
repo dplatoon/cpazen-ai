@@ -92,6 +92,91 @@ export default function AdminPage() {
     enabled: userRole === 'admin',
   });
 
+  const { data: recentActivity } = useQuery({
+    queryKey: ['recent-activity'],
+    queryFn: async () => {
+      // Fetch campaigns with user info
+      const { data: campaigns } = await supabase
+        .from('campaigns')
+        .select('id, name, created_at, status, user_id')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Fetch clicks with campaign and user info
+      const { data: clicks } = await supabase
+        .from('clicks')
+        .select('id, created_at, country, user_id, campaign_id')
+        .order('created_at', { ascending: false })
+        .limit(15);
+
+      // Fetch conversions with campaign and user info
+      const { data: conversions } = await supabase
+        .from('conversions')
+        .select('id, created_at, payout, status, user_id, campaign_id')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Get all unique user IDs
+      const userIds = new Set([
+        ...(campaigns || []).map((c) => c.user_id),
+        ...(clicks || []).map((c) => c.user_id),
+        ...(conversions || []).map((c) => c.user_id),
+      ]);
+
+      // Get all unique campaign IDs
+      const campaignIds = new Set([
+        ...(clicks || []).map((c) => c.campaign_id),
+        ...(conversions || []).map((c) => c.campaign_id),
+      ]);
+
+      // Fetch user emails
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, email')
+        .in('user_id', Array.from(userIds));
+
+      // Fetch campaign names
+      const { data: campaignNames } = await supabase
+        .from('campaigns')
+        .select('id, name')
+        .in('id', Array.from(campaignIds));
+
+      const profileMap = new Map(profiles?.map((p) => [p.user_id, p.email]));
+      const campaignMap = new Map(campaignNames?.map((c) => [c.id, c.name]));
+
+      const activities = [
+        ...(campaigns || []).map((c) => ({
+          type: 'campaign' as const,
+          id: c.id,
+          timestamp: c.created_at,
+          description: `Campaign "${c.name}" created`,
+          user: profileMap.get(c.user_id) || 'Unknown',
+          status: c.status,
+        })),
+        ...(clicks || []).map((c) => ({
+          type: 'click' as const,
+          id: c.id,
+          timestamp: c.created_at,
+          description: `Click from ${c.country || 'Unknown'}`,
+          campaign: campaignMap.get(c.campaign_id) || 'Unknown Campaign',
+          user: profileMap.get(c.user_id) || 'Unknown',
+        })),
+        ...(conversions || []).map((c) => ({
+          type: 'conversion' as const,
+          id: c.id,
+          timestamp: c.created_at,
+          description: `Conversion $${Number(c.payout).toFixed(2)}`,
+          campaign: campaignMap.get(c.campaign_id) || 'Unknown Campaign',
+          user: profileMap.get(c.user_id) || 'Unknown',
+          status: c.status,
+        })),
+      ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+      return activities.slice(0, 20);
+    },
+    enabled: userRole === 'admin',
+  });
+
   if (roleLoading || !userRole) {
     return (
       <div className="container mx-auto p-6 space-y-6">
@@ -117,7 +202,7 @@ export default function AdminPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -134,7 +219,7 @@ export default function AdminPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
+            <CardTitle className="text-sm font-medium">Campaigns</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -148,7 +233,7 @@ export default function AdminPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Clicks</CardTitle>
+            <CardTitle className="text-sm font-medium">Clicks</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -162,7 +247,21 @@ export default function AdminPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Conversions</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {statsLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <div className="text-2xl font-bold">{stats?.totalConversions.toLocaleString()}</div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -173,11 +272,28 @@ export default function AdminPage() {
             )}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg CR</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {statsLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <div className="text-2xl font-bold">
+                {stats?.totalClicks ? ((stats.totalConversions / stats.totalClicks) * 100).toFixed(2) : '0'}%
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Detailed Views */}
-      <Tabs defaultValue="users" className="space-y-4">
+      <Tabs defaultValue="activity" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="activity">Recent Activity</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="fraud">
             Fraud Alerts
@@ -188,6 +304,61 @@ export default function AdminPage() {
             )}
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="activity" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>System-Wide Activity</CardTitle>
+              <CardDescription>Recent activity across all user accounts</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!recentActivity || recentActivity.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No recent activity
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentActivity.map((activity) => (
+                    <div
+                      key={`${activity.type}-${activity.id}`}
+                      className="flex items-start justify-between border-b pb-3 last:border-0"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge
+                            variant={
+                              activity.type === 'conversion'
+                                ? 'default'
+                                : activity.type === 'campaign'
+                                ? 'secondary'
+                                : 'outline'
+                            }
+                          >
+                            {activity.type}
+                          </Badge>
+                          {'status' in activity && activity.status && (
+                            <Badge variant="outline" className="text-xs">
+                              {activity.status}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="font-medium">{activity.description}</p>
+                        {'campaign' in activity && (
+                          <p className="text-sm text-muted-foreground">
+                            Campaign: {activity.campaign}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          User: {activity.user} • {new Date(activity.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="users" className="space-y-4">
           <Card>
