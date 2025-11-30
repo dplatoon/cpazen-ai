@@ -273,6 +273,124 @@ export type Database = {
           },
         ]
       }
+      fraud_patterns: {
+        Row: {
+          confidence_score: number
+          created_at: string | null
+          false_positive_count: number | null
+          id: string
+          last_triggered_at: string | null
+          pattern_data: Json
+          pattern_type: string
+          true_positive_count: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number
+          created_at?: string | null
+          false_positive_count?: number | null
+          id?: string
+          last_triggered_at?: string | null
+          pattern_data: Json
+          pattern_type: string
+          true_positive_count?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string | null
+          false_positive_count?: number | null
+          id?: string
+          last_triggered_at?: string | null
+          pattern_data?: Json
+          pattern_type?: string
+          true_positive_count?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ip_blacklist: {
+        Row: {
+          auto_detected: boolean | null
+          campaign_id: string | null
+          created_at: string | null
+          id: string
+          ip_address: string
+          reason: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_detected?: boolean | null
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address: string
+          reason?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_detected?: boolean | null
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string
+          reason?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ip_blacklist_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ip_whitelist: {
+        Row: {
+          campaign_id: string | null
+          created_at: string | null
+          id: string
+          ip_address: string
+          note: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address: string
+          note?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string
+          note?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ip_whitelist_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_logs: {
         Row: {
           email_to: string
@@ -472,6 +590,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "webhook_logs_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_test_logs: {
+        Row: {
+          id: string
+          response_body: string | null
+          response_status: number | null
+          response_time_ms: number | null
+          test_payload: Json
+          tested_at: string | null
+          user_id: string
+          webhook_id: string | null
+        }
+        Insert: {
+          id?: string
+          response_body?: string | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          test_payload: Json
+          tested_at?: string | null
+          user_id: string
+          webhook_id?: string | null
+        }
+        Update: {
+          id?: string
+          response_body?: string | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          test_payload?: Json
+          tested_at?: string | null
+          user_id?: string
+          webhook_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_test_logs_webhook_id_fkey"
             columns: ["webhook_id"]
             isOneToOne: false
             referencedRelation: "webhooks"

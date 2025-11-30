@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.system-health]
 verify_jwt = false
 
+[functions.test-webhook]
+verify_jwt = true
+
 [functions.webhook-handler]
 verify_jwt = false
 

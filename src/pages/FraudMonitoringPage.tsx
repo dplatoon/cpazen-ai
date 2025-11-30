@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Shield, TrendingUp } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FraudPatternManager } from '@/components/fraud/FraudPatternManager';
 
 export default function FraudMonitoringPage() {
   const { data: fraudAlerts, isLoading: alertsLoading } = useQuery({
@@ -84,7 +85,7 @@ export default function FraudMonitoringPage() {
 
       {/* Detailed Views */}
       <Tabs defaultValue="alerts" className="space-y-4">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="alerts">
             Fraud Alerts
             {pendingAlerts > 0 && (
@@ -94,6 +95,7 @@ export default function FraudMonitoringPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="clicks">Suspicious Clicks</TabsTrigger>
+          <TabsTrigger value="patterns">ML Patterns</TabsTrigger>
         </TabsList>
 
         <TabsContent value="alerts">
@@ -210,6 +212,10 @@ export default function FraudMonitoringPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="patterns">
+          <FraudPatternManager />
         </TabsContent>
       </Tabs>
     </div>
