@@ -23,3 +23,9 @@ verify_jwt = false
 
 [functions.fraud-detection]
 verify_jwt = false
+
+[functions.postback]
+verify_jwt = false
+
+[functions.track-click]
+verify_jwt = false
