@@ -13,32 +13,93 @@ serve(async (req) => {
   }
 
   try {
-    const requestBody = await req.json();
-    
-    // Validate inputs with schema
-    const postbackSchema = z.object({
-      click_id: z.string().uuid('Invalid click_id format'),
-      payout: z.number().min(0, 'Payout must be non-negative').max(10000, 'Payout exceeds maximum'),
-      status: z.enum(['pending', 'approved', 'rejected', 'cancelled']).default('pending'),
-      security_token: z.string().min(1, 'Security token is required')
-    });
+    let click_id: string;
+    let payout: number;
+    let status: string;
+    let security_token: string | undefined;
+    let rawData: any = {};
 
-    const validationResult = postbackSchema.safeParse({
-      click_id: requestBody.click_id,
-      payout: parseFloat(requestBody.payout),
-      status: requestBody.status || 'pending',
-      security_token: requestBody.security_token
-    });
+    // Handle both GET (MaxBounty format) and POST (JSON format)
+    if (req.method === 'GET') {
+      // MaxBounty and similar networks use GET with query params
+      const url = new URL(req.url);
+      const cid = url.searchParams.get('cid'); // MaxBounty uses 'cid'
+      const payoutParam = url.searchParams.get('payout');
+      const statusParam = url.searchParams.get('status');
+      const token = url.searchParams.get('security_token');
 
-    if (!validationResult.success) {
-      return new Response(JSON.stringify({ error: 'Invalid request parameters' }), {
-        status: 400,
+      // Validate GET parameters
+      const getSchema = z.object({
+        cid: z.string().uuid('Invalid click_id format'),
+        payout: z.string().transform(val => parseFloat(val)).pipe(
+          z.number().min(0, 'Payout must be non-negative').max(10000, 'Payout exceeds maximum')
+        ),
+        status: z.enum(['pending', 'approved', 'rejected', 'cancelled']).default('approved'),
+        security_token: z.string().optional()
+      });
+
+      const validationResult = getSchema.safeParse({
+        cid,
+        payout: payoutParam,
+        status: statusParam || 'approved',
+        security_token: token
+      });
+
+      if (!validationResult.success) {
+        return new Response(JSON.stringify({ error: 'Invalid request parameters' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      click_id = validationResult.data.cid;
+      payout = validationResult.data.payout;
+      status = validationResult.data.status;
+      security_token = validationResult.data.security_token;
+
+      // Store all query params as raw data
+      url.searchParams.forEach((value, key) => {
+        rawData[key] = value;
+      });
+
+    } else if (req.method === 'POST') {
+      // Traditional JSON POST format
+      const requestBody = await req.json();
+      
+      const postbackSchema = z.object({
+        click_id: z.string().uuid('Invalid click_id format'),
+        payout: z.number().min(0, 'Payout must be non-negative').max(10000, 'Payout exceeds maximum'),
+        status: z.enum(['pending', 'approved', 'rejected', 'cancelled']).default('pending'),
+        security_token: z.string().optional()
+      });
+
+      const validationResult = postbackSchema.safeParse({
+        click_id: requestBody.click_id,
+        payout: parseFloat(requestBody.payout),
+        status: requestBody.status || 'pending',
+        security_token: requestBody.security_token
+      });
+
+      if (!validationResult.success) {
+        return new Response(JSON.stringify({ error: 'Invalid request parameters' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      click_id = validationResult.data.click_id;
+      payout = validationResult.data.payout;
+      status = validationResult.data.status;
+      security_token = validationResult.data.security_token;
+
+      const { click_id: _, payout: __, status: ___, security_token: ____, ...rest } = requestBody;
+      rawData = rest;
+    } else {
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-
-    const { click_id, payout, status, security_token } = validationResult.data;
-    const { click_id: _, payout: __, status: ___, security_token: ____, ...rawData } = requestBody;
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -60,26 +121,28 @@ serve(async (req) => {
       });
     }
 
-    // Verify security token using secure server-side validation (REQUIRED)
-    const { data: isValid, error: validationError } = await supabase
-      .rpc('validate_postback_security_token', {
-        click_id_param: click_id,
-        provided_token: security_token
-      });
-    
-    if (validationError) {
-      console.error('[INTERNAL] Token validation error:', validationError);
-      return new Response(JSON.stringify({ error: 'Authentication failed' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    
-    if (!isValid) {
-      return new Response(JSON.stringify({ error: 'Authentication failed' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    // Verify security token if provided (optional for networks like MaxBounty)
+    if (security_token) {
+      const { data: isValid, error: validationError } = await supabase
+        .rpc('validate_postback_security_token', {
+          click_id_param: click_id,
+          provided_token: security_token
+        });
+      
+      if (validationError) {
+        console.error('[INTERNAL] Token validation error:', validationError);
+        return new Response(JSON.stringify({ error: 'Authentication failed' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      if (!isValid) {
+        return new Response(JSON.stringify({ error: 'Authentication failed' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     // Get click details

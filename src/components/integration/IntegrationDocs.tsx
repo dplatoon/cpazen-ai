@@ -105,11 +105,11 @@ export function IntegrationDocs() {
             Configure your affiliate network to send conversion data
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <div>
             <h4 className="font-semibold mb-2">Postback URL:</h4>
             <div className="bg-muted p-3 rounded-lg flex items-center justify-between">
-              <code className="text-sm">
+              <code className="text-sm break-all">
                 {postbackUrl}
               </code>
               <Button
@@ -122,35 +122,54 @@ export function IntegrationDocs() {
             </div>
           </div>
 
-          <div>
-            <h4 className="font-semibold mb-2">Required Parameters (JSON POST):</h4>
-            <div className="bg-muted p-3 rounded-lg">
-              <pre className="text-sm">
-{`{
-  "click_id": "uuid-from-tracking-link",
-  "payout": 25.00,
-  "status": "approved"
-}`}
-              </pre>
-            </div>
-          </div>
+          <div className="space-y-3">
+            <div>
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Badge variant="secondary">Method 1</Badge>
+                GET Request (MaxBounty, ClickDealer)
+              </h4>
+              <div className="bg-muted p-3 rounded-lg">
+                <pre className="text-xs overflow-x-auto">
+{`${postbackUrl}?cid=#S2#&payout=#RATE#
 
-          <div>
-            <h4 className="font-semibold mb-2">Security Token (Recommended):</h4>
-            <div className="bg-muted p-3 rounded-lg">
-              <pre className="text-sm">
-{`{
+MaxBounty Tokens:
+• #S2# = Click ID (mapped to 'cid' parameter)
+• #RATE# = Payout amount
+
+Example:
+${postbackUrl}?cid=abc123&payout=25.00&status=approved`}
+                </pre>
+              </div>
+              <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-sm text-blue-900 dark:text-blue-100">
+                  <strong>MaxBounty Setup:</strong> Profile → Global Postback → 
+                  Select "URL (any campaign tracking type)" → Paste GET URL with tokens
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Badge variant="secondary">Method 2</Badge>
+                JSON POST (Custom Integration)
+              </h4>
+              <div className="bg-muted p-3 rounded-lg">
+                <pre className="text-xs overflow-x-auto">
+{`POST ${postbackUrl}
+Content-Type: application/json
+
+{
   "click_id": "uuid-from-tracking-link",
   "payout": 25.00,
   "status": "approved",
-  "security_token": "sha256(click_id + your_secret_key)"
+  "security_token": "optional_secret_key"
 }`}
-              </pre>
+                </pre>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Security token is optional but recommended for custom integrations.
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              The security token is SHA-256 hash of click_id concatenated with your profile secret key.
-              Your secret key is kept secure server-side and never exposed to prevent unauthorized access.
-            </p>
           </div>
 
           <div className="space-y-2">
