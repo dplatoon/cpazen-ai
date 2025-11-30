@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { IntegrationDocs } from "@/components/integration/IntegrationDocs";
 import { WebhookManager } from "@/components/integration/WebhookManager";
+import { WebhookTester } from "@/components/integration/WebhookTester";
 import { FeatureAudit } from "@/components/audit/FeatureAudit";
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
@@ -35,9 +36,10 @@ const IntegrationPage = () => {
   return (
     <AppLayout>
       <Tabs defaultValue="integration" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="integration">Integration Guide</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+          <TabsTrigger value="testing">Test Webhooks</TabsTrigger>
           <TabsTrigger value="audit">Feature Audit</TabsTrigger>
         </TabsList>
         
@@ -47,6 +49,10 @@ const IntegrationPage = () => {
         
         <TabsContent value="webhooks" className="space-y-6">
           <WebhookManager />
+        </TabsContent>
+
+        <TabsContent value="testing" className="space-y-6">
+          <WebhookTester />
         </TabsContent>
         
         <TabsContent value="audit" className="space-y-6">

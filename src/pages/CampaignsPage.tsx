@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CampaignManager } from "@/components/campaigns/CampaignManager";
+import { IPManagement } from "@/components/campaigns/IPManagement";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 
@@ -31,7 +33,20 @@ const CampaignsPage = () => {
 
   return (
     <AppLayout>
-      <CampaignManager />
+      <Tabs defaultValue="campaigns" className="w-full">
+        <TabsList>
+          <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+          <TabsTrigger value="ip-control">IP Control</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="campaigns">
+          <CampaignManager />
+        </TabsContent>
+        
+        <TabsContent value="ip-control">
+          <IPManagement />
+        </TabsContent>
+      </Tabs>
     </AppLayout>
   );
 };

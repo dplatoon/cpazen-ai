@@ -72,6 +72,32 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Check IP whitelist/blacklist
+    const { data: whitelistCheck } = await supabase
+      .from('ip_whitelist')
+      .select('id')
+      .or(`campaign_id.eq.${validCampaignId},campaign_id.is.null`)
+      .eq('ip_address', clientIp)
+      .maybeSingle();
+
+    // If not whitelisted, check blacklist
+    if (!whitelistCheck) {
+      const { data: blacklistCheck } = await supabase
+        .from('ip_blacklist')
+        .select('id')
+        .or(`campaign_id.eq.${validCampaignId},campaign_id.is.null`)
+        .eq('ip_address', clientIp)
+        .maybeSingle();
+
+      if (blacklistCheck) {
+        console.log(`Blocked IP: ${clientIp} for campaign ${validCampaignId}`);
+        return new Response('Access denied', {
+          status: 403,
+          headers: corsHeaders,
+        });
+      }
+    }
+
     // Get campaign and offer details
     const { data: campaign, error: campaignError } = await supabase
       .from('campaigns')

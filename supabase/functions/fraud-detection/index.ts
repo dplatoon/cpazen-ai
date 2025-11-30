@@ -30,6 +30,13 @@ Deno.serve(async (req) => {
     let fraudScore = 0;
     const fraudIndicators: string[] = [];
 
+    // Get user's fraud patterns for ML-based detection
+    const { data: fraudPatterns } = await supabase
+      .from('fraud_patterns')
+      .select('*')
+      .eq('user_id', payload.userId)
+      .gte('confidence_score', 60); // Only use patterns with 60%+ confidence
+
     // 1. Check click velocity from same IP (suspicious if > 10 clicks in 1 minute)
     const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
     const { data: recentClicks, error: clicksError } = await supabase
@@ -44,6 +51,30 @@ Deno.serve(async (req) => {
       fraudScore += 30;
       fraudIndicators.push('high_click_velocity');
       console.log(`High click velocity detected: ${recentClicks.length} clicks in 1 minute`);
+
+      // Check if this matches a learned pattern
+      const velocityPattern = fraudPatterns?.find(
+        (p: any) => p.pattern_type === 'click_velocity'
+      );
+      if (velocityPattern) {
+        const boost = Math.round(velocityPattern.confidence_score / 10);
+        fraudScore += boost;
+        fraudIndicators.push('ml_velocity_pattern_match');
+        
+        // Update pattern last triggered
+        await supabase
+          .from('fraud_patterns')
+          .update({ last_triggered_at: new Date().toISOString() })
+          .eq('id', velocityPattern.id);
+      } else {
+        // Create new pattern to learn from
+        await supabase.from('fraud_patterns').insert({
+          user_id: payload.userId,
+          pattern_type: 'click_velocity',
+          pattern_data: { clicks_per_minute: recentClicks.length, ip_address: payload.ipAddress },
+          confidence_score: 50, // Start with medium confidence
+        });
+      }
     }
 
     // 2. Check for bot patterns in user agent
@@ -76,6 +107,28 @@ Deno.serve(async (req) => {
             fraudScore += 35;
             fraudIndicators.push('instant_conversion');
             console.log(`Instant conversion detected: ${timeDiff}s`);
+
+            // Check for conversion time pattern
+            const conversionPattern = fraudPatterns?.find(
+              (p: any) => p.pattern_type === 'conversion_time'
+            );
+            if (conversionPattern) {
+              const boost = Math.round(conversionPattern.confidence_score / 10);
+              fraudScore += boost;
+              fraudIndicators.push('ml_conversion_pattern_match');
+              
+              await supabase
+                .from('fraud_patterns')
+                .update({ last_triggered_at: new Date().toISOString() })
+                .eq('id', conversionPattern.id);
+            } else {
+              await supabase.from('fraud_patterns').insert({
+                user_id: payload.userId,
+                pattern_type: 'conversion_time',
+                pattern_data: { time_to_convert_seconds: timeDiff },
+                confidence_score: 50,
+              });
+            }
           }
         }
       }
@@ -95,6 +148,43 @@ Deno.serve(async (req) => {
         fraudScore += 25;
         fraudIndicators.push('geo_inconsistency');
         console.log(`Geographic inconsistency detected: ${uniqueCountries.size} countries`);
+
+        // Check geo anomaly pattern
+        const geoPattern = fraudPatterns?.find(
+          (p: any) => p.pattern_type === 'geo_anomaly'
+        );
+        if (geoPattern) {
+          fraudScore += 10;
+          fraudIndicators.push('ml_geo_pattern_match');
+        }
+      }
+    }
+
+    // 5. Device fingerprint anomaly detection
+    const { data: deviceClicks, error: deviceError } = await supabase
+      .from('clicks')
+      .select('id')
+      .eq('user_agent', payload.userAgent)
+      .eq('ip_address', payload.ipAddress)
+      .gte('created_at', new Date(Date.now() - 3600000).toISOString()); // Last hour
+
+    if (!deviceError && deviceClicks && deviceClicks.length > 50) {
+      fraudScore += 20;
+      fraudIndicators.push('device_fingerprint_anomaly');
+      
+      const fingerprintPattern = fraudPatterns?.find(
+        (p: any) => p.pattern_type === 'device_fingerprint'
+      );
+      if (fingerprintPattern) {
+        fraudScore += 10;
+        fraudIndicators.push('ml_fingerprint_pattern_match');
+      } else {
+        await supabase.from('fraud_patterns').insert({
+          user_id: payload.userId,
+          pattern_type: 'device_fingerprint',
+          pattern_data: { clicks_per_hour: deviceClicks.length, user_agent: payload.userAgent, ip: payload.ipAddress },
+          confidence_score: 50,
+        });
       }
     }
 
