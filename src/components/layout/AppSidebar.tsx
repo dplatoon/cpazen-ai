@@ -1,4 +1,4 @@
-import { BarChart3, Target, Zap, Settings, Users, Globe, Brain, TrendingUp, Bell, Shield, ClipboardCheck } from "lucide-react";
+import { BarChart3, Target, Zap, Settings, Users, Globe, Brain, TrendingUp, Bell, Shield, ClipboardCheck, LayoutDashboard, Package } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import cpazenLogo from "@/assets/cpazen-logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +25,10 @@ const navigation = [
   { name: "Analytics", href: "/analytics", icon: TrendingUp },
   { name: "Integration", href: "/integration", icon: Settings },
   { name: "Profile", href: "/profile", icon: Users },
+];
+
+const affiliateNavigation = [
+  { name: "Affiliate Hub", href: "/affiliate-dashboard", icon: Package },
 ];
 
 const adminNavigation = [
@@ -84,6 +88,33 @@ export function AppSidebar() {
             </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
+          {/* Affiliate Section - visible to affiliates */}
+          {userRole === 'affiliate' && (
+            <SidebarGroup>
+              <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
+                Affiliate
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {affiliateNavigation.map((item) => (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton asChild isActive={isActive(item.href)}>
+                        <NavLink 
+                          to={item.href} 
+                          end
+                          className={getNavClass}
+                        >
+                          <item.icon className="h-5 w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="truncate">{item.name}</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
 
           {userRole === 'admin' && (
             <SidebarGroup>
