@@ -679,10 +679,57 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_create_offer: {
+        Args: {
+          p_countries?: string[]
+          p_currency?: string
+          p_daily_cap?: number
+          p_name: string
+          p_network?: string
+          p_offer_url: string
+          p_payout: number
+          p_status?: string
+          p_user_id?: string
+        }
+        Returns: string
+      }
+      admin_delete_offer: { Args: { p_offer_id: string }; Returns: boolean }
+      admin_update_offer: {
+        Args: {
+          p_countries?: string[]
+          p_currency?: string
+          p_daily_cap?: number
+          p_name?: string
+          p_network?: string
+          p_offer_id: string
+          p_offer_url?: string
+          p_payout?: number
+          p_status?: string
+        }
+        Returns: boolean
+      }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       generate_security_token_for_click: {
         Args: { click_id_param: string }
         Returns: string
+      }
+      get_all_offers_admin: {
+        Args: never
+        Returns: {
+          countries: string[]
+          created_at: string
+          currency: string
+          daily_cap: number
+          id: string
+          name: string
+          network: string
+          offer_url: string
+          owner_email: string
+          payout: number
+          status: string
+          updated_at: string
+          user_id: string
+        }[]
       }
       get_available_offers: {
         Args: never
@@ -698,6 +745,21 @@ export type Database = {
           payout: number
           status: string
           updated_at: string
+        }[]
+      }
+      get_global_offers: {
+        Args: never
+        Returns: {
+          countries: string[]
+          created_at: string
+          currency: string
+          daily_cap: number
+          id: string
+          name: string
+          network: string
+          offer_url: string
+          payout: number
+          status: string
         }[]
       }
       get_user_secret_key_masked: { Args: never; Returns: string }

@@ -21,6 +21,7 @@ const TestingPage = lazy(() => import("./pages/TestingPage"));
 const MonitoringPage = lazy(() => import("./pages/MonitoringPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
+const AffiliateDashboard = lazy(() => import("./pages/AffiliateDashboard"));
 const FraudMonitoringPage = lazy(() => import("./pages/FraudMonitoringPage"));
 const AuditPage = lazy(() => import("./pages/AuditPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="/monitoring" element={<ModernLayout><MonitoringPage /></ModernLayout>} />
               <Route path="/settings" element={<ModernLayout><SettingsPage /></ModernLayout>} />
               <Route path="/admin" element={<ModernLayout><AdminPage /></ModernLayout>} />
+              <Route path="/affiliate-dashboard" element={<ModernLayout><AffiliateDashboard /></ModernLayout>} />
               <Route path="/fraud" element={<ModernLayout><FraudMonitoringPage /></ModernLayout>} />
               <Route path="/audit" element={<ModernLayout><AuditPage /></ModernLayout>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
