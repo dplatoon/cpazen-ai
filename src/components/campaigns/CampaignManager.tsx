@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, ExternalLink, Copy, Play, Pause, Square } from "lucide-react";
+import { Plus, Search, Filter, ExternalLink, Copy, Play, Pause, Square, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCampaigns } from "@/hooks/useRealData";
 import { useCampaignMetrics } from "@/hooks/useCampaignMetrics";
@@ -18,6 +19,7 @@ export const CampaignManager = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { data: campaigns = [], isLoading } = useCampaigns();
   const { data: campaignMetrics = {} } = useCampaignMetrics();
   const { generateTrackingUrl } = useTrackingDomain();
@@ -220,6 +222,14 @@ export const CampaignManager = () => {
                   
                   <td className="p-4">
                     <div className="flex items-center justify-center space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-primary hover:bg-primary/10"
+                        onClick={() => navigate(`/campaigns/${campaign.id}`)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
