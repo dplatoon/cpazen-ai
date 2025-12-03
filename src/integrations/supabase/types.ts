@@ -480,6 +480,7 @@ export type Database = {
           id: string
           notification_preferences: Json | null
           secret_key: string
+          status: string
           timezone: string
           updated_at: string
           user_id: string
@@ -491,6 +492,7 @@ export type Database = {
           id?: string
           notification_preferences?: Json | null
           secret_key?: string
+          status?: string
           timezone?: string
           updated_at?: string
           user_id: string
@@ -502,6 +504,7 @@ export type Database = {
           id?: string
           notification_preferences?: Json | null
           secret_key?: string
+          status?: string
           timezone?: string
           updated_at?: string
           user_id?: string
@@ -708,6 +711,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      admin_update_user_role: {
+        Args: {
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      admin_update_user_status: {
+        Args: { p_status: string; p_user_id: string }
+        Returns: boolean
+      }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       generate_security_token_for_click: {
         Args: { click_id_param: string }
@@ -727,6 +741,19 @@ export type Database = {
           owner_email: string
           payout: number
           status: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      get_all_users_admin: {
+        Args: never
+        Returns: {
+          company_name: string
+          created_at: string
+          email: string
+          role: string
+          status: string
+          timezone: string
           updated_at: string
           user_id: string
         }[]
@@ -760,6 +787,15 @@ export type Database = {
           offer_url: string
           payout: number
           status: string
+        }[]
+      }
+      get_user_activity_admin: {
+        Args: { p_user_id: string }
+        Returns: {
+          activity_type: string
+          created_at: string
+          description: string
+          metadata: Json
         }[]
       }
       get_user_secret_key_masked: { Args: never; Returns: string }
