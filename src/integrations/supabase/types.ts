@@ -14,48 +14,184 @@ export type Database = {
   }
   public: {
     Tables: {
-      campaigns: {
+      automation_rules: {
         Row: {
-          cost_model: string | null
+          action_json: Json
+          campaign_id: string
+          condition_json: Json
           created_at: string
-          daily_budget: number | null
           id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
           name: string
-          offer_id: string | null
-          redirect_mode: string | null
-          status: string
-          total_budget: number | null
-          tracking_domain: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          cost_model?: string | null
+          action_json?: Json
+          campaign_id: string
+          condition_json?: Json
           created_at?: string
-          daily_budget?: number | null
           id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
           name: string
-          offer_id?: string | null
-          redirect_mode?: string | null
-          status?: string
-          total_budget?: number | null
-          tracking_domain?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          cost_model?: string | null
+          action_json?: Json
+          campaign_id?: string
+          condition_json?: Json
           created_at?: string
-          daily_budget?: number | null
           id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
           name?: string
-          offer_id?: string | null
-          redirect_mode?: string | null
-          status?: string
-          total_budget?: number | null
-          tracking_domain?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_rules_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_stats: {
+        Row: {
+          campaign_id: string
+          clicks: number | null
+          conversions: number | null
+          cost: number | null
+          created_at: string
+          date: string
+          device: string | null
+          geo: string | null
+          id: string
+          impressions: number | null
+          os: string | null
+          placement: string | null
+          revenue: number | null
+          sub_id: string | null
+          traffic_source_id: string | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          clicks?: number | null
+          conversions?: number | null
+          cost?: number | null
+          created_at?: string
+          date: string
+          device?: string | null
+          geo?: string | null
+          id?: string
+          impressions?: number | null
+          os?: string | null
+          placement?: string | null
+          revenue?: number | null
+          sub_id?: string | null
+          traffic_source_id?: string | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          clicks?: number | null
+          conversions?: number | null
+          cost?: number | null
+          created_at?: string
+          date?: string
+          device?: string | null
+          geo?: string | null
+          id?: string
+          impressions?: number | null
+          os?: string | null
+          placement?: string | null
+          revenue?: number | null
+          sub_id?: string | null
+          traffic_source_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_stats_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          cost_model: string | null
+          created_at: string
+          currency: string | null
+          daily_budget: number | null
+          devices: string[] | null
+          id: string
+          monthly_budget: number | null
+          name: string
+          offer_id: string | null
+          os: string[] | null
+          redirect_mode: string | null
+          status: string
+          target_cpa: number | null
+          target_geo: string[] | null
+          total_budget: number | null
+          tracking_domain: string | null
+          traffic_source_id: string | null
+          updated_at: string
+          user_id: string
+          vertical: string | null
+        }
+        Insert: {
+          cost_model?: string | null
+          created_at?: string
+          currency?: string | null
+          daily_budget?: number | null
+          devices?: string[] | null
+          id?: string
+          monthly_budget?: number | null
+          name: string
+          offer_id?: string | null
+          os?: string[] | null
+          redirect_mode?: string | null
+          status?: string
+          target_cpa?: number | null
+          target_geo?: string[] | null
+          total_budget?: number | null
+          tracking_domain?: string | null
+          traffic_source_id?: string | null
+          updated_at?: string
+          user_id: string
+          vertical?: string | null
+        }
+        Update: {
+          cost_model?: string | null
+          created_at?: string
+          currency?: string | null
+          daily_budget?: number | null
+          devices?: string[] | null
+          id?: string
+          monthly_budget?: number | null
+          name?: string
+          offer_id?: string | null
+          os?: string[] | null
+          redirect_mode?: string | null
+          status?: string
+          target_cpa?: number | null
+          target_geo?: string[] | null
+          total_budget?: number | null
+          tracking_domain?: string | null
+          traffic_source_id?: string | null
+          updated_at?: string
+          user_id?: string
+          vertical?: string | null
         }
         Relationships: [
           {
@@ -209,6 +345,59 @@ export type Database = {
             columns: ["click_id"]
             isOneToOne: false
             referencedRelation: "clicks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      experiments: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          metric: string
+          min_data_threshold: number | null
+          name: string
+          status: string
+          type: string
+          updated_at: string
+          user_id: string
+          variants: Json
+          winner_variant_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          metric?: string
+          min_data_threshold?: number | null
+          name: string
+          status?: string
+          type: string
+          updated_at?: string
+          user_id: string
+          variants?: Json
+          winner_variant_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          metric?: string
+          min_data_threshold?: number | null
+          name?: string
+          status?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+          variants?: Json
+          winner_variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experiments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]
@@ -510,6 +699,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      recommendations: {
+        Row: {
+          campaign_id: string
+          confidence_score: number | null
+          created_at: string
+          description: string
+          expected_impact: Json | null
+          id: string
+          scope: Json | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          confidence_score?: number | null
+          created_at?: string
+          description: string
+          expected_impact?: Json | null
+          id?: string
+          scope?: Json | null
+          status?: string
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          description?: string
+          expected_impact?: Json | null
+          id?: string
+          scope?: Json | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       secret_key_rotations: {
         Row: {
