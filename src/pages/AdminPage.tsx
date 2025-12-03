@@ -6,9 +6,10 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Users, AlertTriangle, Activity, TrendingUp, DollarSign, Package } from 'lucide-react';
+import { Shield, Users, AlertTriangle, Activity, TrendingUp, DollarSign, Package, UserCog } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AdminOfferManager } from '@/components/admin/AdminOfferManager';
+import { UserManagement } from '@/components/admin/UserManagement';
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -299,7 +300,10 @@ export default function AdminPage() {
             <Package className="mr-2 h-4 w-4" />
             Offers
           </TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="user-management">
+            <UserCog className="mr-2 h-4 w-4" />
+            User Management
+          </TabsTrigger>
           <TabsTrigger value="fraud">
             Fraud Alerts
             {stats && stats.pendingAlerts > 0 && (
@@ -369,30 +373,8 @@ export default function AdminPage() {
           <AdminOfferManager />
         </TabsContent>
 
-        <TabsContent value="users" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Users</CardTitle>
-              <CardDescription>Latest registered users</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentUsers?.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between border-b pb-2">
-                    <div>
-                      <p className="font-medium">{user.email}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Joined {new Date(user.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Badge>
-                      {user.role}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="user-management" className="space-y-4">
+          <UserManagement />
         </TabsContent>
 
         <TabsContent value="fraud" className="space-y-4">
