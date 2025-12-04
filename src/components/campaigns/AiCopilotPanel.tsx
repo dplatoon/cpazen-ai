@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import { Sparkles, Send, User, Bot, Loader2 } from "lucide-react";
 import { useCampaignKpis, useCampaignHealthScore } from "@/hooks/useCampaignAnalytics";
 import { useRecommendations } from "@/hooks/useRecommendations";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface AiCopilotPanelProps {
   campaignId: string;
@@ -19,91 +20,152 @@ interface Message {
   content: string;
 }
 
-// TODO: Replace with actual LLM call via Lovable AI
-function generateLocalResponse(
-  question: string, 
-  kpis: any, 
-  health: any, 
-  recommendations: any[]
-): string {
-  const q = question.toLowerCase();
-  
-  // Handle common questions with heuristic responses
-  if (q.includes('reduce cpa') || q.includes('lower cpa')) {
-    if (kpis?.cpa > 0) {
-      const suggestions = [];
-      if (kpis.conversionRate < 2) {
-        suggestions.push("Your conversion rate is below 2%. Consider testing new landing pages or improving your targeting.");
-      }
-      if (recommendations?.some(r => r.type === 'lower_bid')) {
-        suggestions.push("AI recommends lowering bids on underperforming sources.");
-      }
-      suggestions.push("Focus on high-performing GEOs and devices, and pause sources with CPA above your target.");
-      return suggestions.join("\n\n");
-    }
-    return "To reduce CPA, focus on optimizing your targeting, testing new creatives, and pausing underperforming traffic sources.";
-  }
-  
-  if (q.includes('wrong') || q.includes('issue') || q.includes('problem')) {
-    const issues = [];
-    if (health?.label === 'Needs attention') {
-      issues.push(`Campaign health is showing "${health.label}". ${health.reason}`);
-    }
-    if (kpis?.profit < 0) {
-      issues.push(`Campaign is currently unprofitable with a loss of $${Math.abs(kpis.profit).toFixed(2)}.`);
-    }
-    if (kpis?.conversionRate < 1) {
-      issues.push(`Conversion rate is very low at ${kpis.conversionRate.toFixed(2)}%. This could indicate targeting or landing page issues.`);
-    }
-    return issues.length > 0 
-      ? issues.join("\n\n") 
-      : "No major issues detected. Campaign metrics are within acceptable ranges.";
-  }
-  
-  if (q.includes('scale') || q.includes('grow') || q.includes('increase')) {
-    if (kpis?.roas >= 1.5 || kpis?.profit > 0) {
-      return `Your campaign is profitable with ${kpis.roas.toFixed(2)}x ROAS. To scale:\n\n1. Gradually increase daily budget by 20-30%\n2. Expand to similar GEOs that performed well\n3. Test new traffic sources while maintaining current winners\n4. Consider running A/B tests on landing pages`;
-    }
-    return "Before scaling, focus on improving profitability first. Your current metrics suggest optimization is needed.";
-  }
-  
-  if (q.includes('perform') || q.includes('how') || q.includes('stats')) {
-    if (kpis) {
-      return `Campaign Performance Summary:\n\n• Clicks: ${kpis.clicks.toLocaleString()}\n• Conversions: ${kpis.conversions}\n• Revenue: $${kpis.revenue.toFixed(2)}\n• Profit: $${kpis.profit.toFixed(2)}\n• CPA: $${kpis.cpa.toFixed(2)}\n• Conversion Rate: ${kpis.conversionRate.toFixed(2)}%\n\nHealth: ${health?.label || 'Unknown'} (${health?.score || 0}/100)`;
-    }
-    return "I don't have enough data to provide a performance summary yet.";
-  }
-  
-  // Default response
-  return `Based on your campaign data:\n\n• Health Score: ${health?.score || 'N/A'}/100 (${health?.label || 'Unknown'})\n• ${recommendations?.filter(r => r.status === 'new').length || 0} pending recommendations\n\nTry asking specific questions like:\n- "How can I reduce CPA?"\n- "What went wrong this week?"\n- "How can I scale this campaign?"`;
-}
+const COPILOT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-copilot`;
 
 export function AiCopilotPanel({ campaignId, campaignName }: AiCopilotPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   
   const { data: kpis } = useCampaignKpis(campaignId);
   const { data: health } = useCampaignHealthScore(campaignId);
   const { data: recommendations } = useRecommendations(campaignId);
 
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const streamChat = async (userMessages: Message[]) => {
+    const campaignContext = {
+      campaignName,
+      kpis,
+      health,
+      recommendations: recommendations || [],
+    };
+
+    const resp = await fetch(COPILOT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ 
+        messages: userMessages.map(m => ({ role: m.role, content: m.content })),
+        campaignContext,
+      }),
+    });
+
+    if (!resp.ok) {
+      const errorData = await resp.json().catch(() => ({}));
+      if (resp.status === 429) {
+        throw new Error(errorData.error || "Rate limit exceeded. Please try again later.");
+      }
+      if (resp.status === 402) {
+        throw new Error(errorData.error || "AI credits depleted. Please add funds.");
+      }
+      throw new Error(errorData.error || "Failed to get AI response");
+    }
+
+    if (!resp.body) throw new Error("No response body");
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let textBuffer = "";
+    let assistantContent = "";
+
+    // Add empty assistant message that we'll update
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      textBuffer += decoder.decode(value, { stream: true });
+
+      let newlineIndex: number;
+      while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+        let line = textBuffer.slice(0, newlineIndex);
+        textBuffer = textBuffer.slice(newlineIndex + 1);
+
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        if (line.startsWith(":") || line.trim() === "") continue;
+        if (!line.startsWith("data: ")) continue;
+
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === "[DONE]") break;
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) {
+            assistantContent += content;
+            setMessages(prev => {
+              const newMessages = [...prev];
+              newMessages[newMessages.length - 1] = { role: 'assistant', content: assistantContent };
+              return newMessages;
+            });
+          }
+        } catch {
+          // Incomplete JSON, put back and wait for more
+          textBuffer = line + "\n" + textBuffer;
+          break;
+        }
+      }
+    }
+
+    // Final flush
+    if (textBuffer.trim()) {
+      for (let raw of textBuffer.split("\n")) {
+        if (!raw) continue;
+        if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+        if (raw.startsWith(":") || raw.trim() === "") continue;
+        if (!raw.startsWith("data: ")) continue;
+        const jsonStr = raw.slice(6).trim();
+        if (jsonStr === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) {
+            assistantContent += content;
+            setMessages(prev => {
+              const newMessages = [...prev];
+              newMessages[newMessages.length - 1] = { role: 'assistant', content: assistantContent };
+              return newMessages;
+            });
+          }
+        } catch { /* ignore */ }
+      }
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
     
     const userMessage: Message = { role: 'user', content: input.trim() };
-    setMessages(prev => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInput('');
     setIsLoading(true);
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Generate local response (TODO: Replace with actual LLM call)
-    const response = generateLocalResponse(input, kpis, health, recommendations || []);
-    const assistantMessage: Message = { role: 'assistant', content: response };
-    
-    setMessages(prev => [...prev, assistantMessage]);
-    setIsLoading(false);
+    try {
+      await streamChat(newMessages);
+    } catch (error) {
+      console.error("AI Copilot error:", error);
+      toast({
+        title: "AI Error",
+        description: error instanceof Error ? error.message : "Failed to get AI response",
+        variant: "destructive",
+      });
+      // Remove the empty assistant message if there was an error
+      setMessages(prev => prev.filter((_, i) => i !== prev.length - 1 || prev[i].content !== ''));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -128,7 +190,7 @@ export function AiCopilotPanel({ campaignId, campaignName }: AiCopilotPanelProps
           </div>
           <div>
             <CardTitle className="text-lg">AI Copilot</CardTitle>
-            <Badge variant="outline" className="text-xs mt-1">Beta</Badge>
+            <Badge variant="outline" className="text-xs mt-1">Powered by Lovable AI</Badge>
           </div>
         </div>
         <CardDescription>
@@ -136,7 +198,7 @@ export function AiCopilotPanel({ campaignId, campaignName }: AiCopilotPanelProps
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0">
-        <ScrollArea className="flex-1 pr-4 -mr-4">
+        <ScrollArea className="flex-1 pr-4 -mr-4" ref={scrollRef}>
           <div className="space-y-4">
             {messages.length === 0 ? (
               <div className="text-center py-8">
@@ -151,9 +213,7 @@ export function AiCopilotPanel({ campaignId, campaignName }: AiCopilotPanelProps
                       variant="outline"
                       size="sm"
                       className="text-xs"
-                      onClick={() => {
-                        setInput(q);
-                      }}
+                      onClick={() => setInput(q)}
                     >
                       {q}
                     </Button>
@@ -182,7 +242,7 @@ export function AiCopilotPanel({ campaignId, campaignName }: AiCopilotPanelProps
                         : "bg-muted"
                     )}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{msg.content || (isLoading && i === messages.length - 1 ? '...' : '')}</p>
                   </div>
                   {msg.role === 'user' && (
                     <div className="p-2 rounded-full bg-muted h-8 w-8 flex items-center justify-center shrink-0">
@@ -192,7 +252,7 @@ export function AiCopilotPanel({ campaignId, campaignName }: AiCopilotPanelProps
                 </div>
               ))
             )}
-            {isLoading && (
+            {isLoading && messages[messages.length - 1]?.content === '' && (
               <div className="flex gap-3">
                 <div className="p-2 rounded-full bg-primary/10 h-8 w-8 flex items-center justify-center">
                   <Bot className="h-4 w-4 text-primary" />
