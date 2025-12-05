@@ -28,10 +28,77 @@ const AVAILABLE_EVENTS = [
   { value: 'fraud_alert', label: 'Fraud Alert' },
 ];
 
+// Security: Validate webhook URLs to prevent SSRF attacks
+function validateWebhookUrl(urlString: string): { valid: boolean; error?: string } {
+  try {
+    const url = new URL(urlString);
+    
+    // Only allow HTTP and HTTPS protocols
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return { valid: false, error: 'Only HTTP and HTTPS protocols are allowed' };
+    }
+    
+    const hostname = url.hostname.toLowerCase();
+    
+    // Block localhost and loopback addresses
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+      return { valid: false, error: 'Localhost URLs are not allowed' };
+    }
+    
+    // Block private IP ranges
+    const ipv4Pattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+    const ipMatch = hostname.match(ipv4Pattern);
+    if (ipMatch) {
+      const [, a, b, c, d] = ipMatch.map(Number);
+      
+      // 10.0.0.0/8
+      if (a === 10) {
+        return { valid: false, error: 'Private IP addresses are not allowed' };
+      }
+      
+      // 172.16.0.0/12
+      if (a === 172 && b >= 16 && b <= 31) {
+        return { valid: false, error: 'Private IP addresses are not allowed' };
+      }
+      
+      // 192.168.0.0/16
+      if (a === 192 && b === 168) {
+        return { valid: false, error: 'Private IP addresses are not allowed' };
+      }
+      
+      // 169.254.0.0/16 - Cloud metadata
+      if (a === 169 && b === 254) {
+        return { valid: false, error: 'Cloud metadata endpoints are not allowed' };
+      }
+      
+      // 127.0.0.0/8
+      if (a === 127) {
+        return { valid: false, error: 'Loopback addresses are not allowed' };
+      }
+      
+      // 0.0.0.0/8
+      if (a === 0) {
+        return { valid: false, error: 'Invalid IP address' };
+      }
+    }
+    
+    // Block common internal hostnames
+    const blockedHostnames = ['metadata.google.internal', 'metadata.google', 'metadata', 'internal', 'local'];
+    if (blockedHostnames.some(blocked => hostname === blocked || hostname.endsWith('.' + blocked))) {
+      return { valid: false, error: 'Internal hostnames are not allowed' };
+    }
+    
+    return { valid: true };
+  } catch {
+    return { valid: false, error: 'Invalid URL format' };
+  }
+}
+
 export function WebhookManager() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
+  const [urlError, setUrlError] = useState<string | null>(null);
   const [selectedEvents, setSelectedEvents] = useState<string[]>(['conversion']);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const queryClient = useQueryClient();
@@ -49,10 +116,26 @@ export function WebhookManager() {
     },
   });
 
+  const handleUrlChange = (value: string) => {
+    setUrl(value);
+    if (value) {
+      const validation = validateWebhookUrl(value);
+      setUrlError(validation.valid ? null : validation.error || 'Invalid URL');
+    } else {
+      setUrlError(null);
+    }
+  };
+
   const createWebhook = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
+
+      // Server-side validation (client-side is just UX)
+      const validation = validateWebhookUrl(url);
+      if (!validation.valid) {
+        throw new Error(validation.error || 'Invalid webhook URL');
+      }
 
       const { error } = await supabase.from('webhooks').insert({
         user_id: user.id,
@@ -69,6 +152,7 @@ export function WebhookManager() {
       setOpen(false);
       setName('');
       setUrl('');
+      setUrlError(null);
       setSelectedEvents(['conversion']);
     },
     onError: (error) => {
@@ -115,6 +199,8 @@ export function WebhookManager() {
     setShowSecrets(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const isFormValid = name && url && selectedEvents.length > 0 && !urlError;
+
   return (
     <Card>
       <CardHeader>
@@ -158,9 +244,13 @@ export function WebhookManager() {
                     id="url"
                     type="url"
                     value={url}
-                    onChange={(e) => setUrl(e.target.value)}
+                    onChange={(e) => handleUrlChange(e.target.value)}
                     placeholder="https://api.example.com/webhook"
+                    className={urlError ? 'border-destructive' : ''}
                   />
+                  {urlError && (
+                    <p className="text-sm text-destructive mt-1">{urlError}</p>
+                  )}
                 </div>
                 <div>
                   <Label>Events to Subscribe</Label>
@@ -192,7 +282,7 @@ export function WebhookManager() {
                 </Button>
                 <Button
                   onClick={() => createWebhook.mutate()}
-                  disabled={!name || !url || selectedEvents.length === 0}
+                  disabled={!isFormValid}
                 >
                   Create Webhook
                 </Button>
