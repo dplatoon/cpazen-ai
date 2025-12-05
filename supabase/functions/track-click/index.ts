@@ -192,7 +192,7 @@ serve(async (req) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`,
+          'X-Internal-Secret': internalSecret || '',
         },
         body: JSON.stringify({
           clickId: clickId,

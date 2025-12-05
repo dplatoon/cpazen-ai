@@ -19,6 +19,18 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Validate internal secret to prevent unauthorized access
+    const internalSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET');
+    const providedSecret = req.headers.get('X-Internal-Secret');
+
+    if (internalSecret && providedSecret !== internalSecret) {
+      console.error("Unauthorized: Invalid internal secret");
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
