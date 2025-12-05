@@ -46,10 +46,10 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
 
   const isActive = (path: string) => currentPath === path;
-  const getNavClass = ({ isActive }: { isActive: boolean }) =>
-    isActive 
+  const getNavClass = ({ isActive: active }: { isActive: boolean }) =>
+    active 
       ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-brand font-medium" 
-      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
+      : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
 
   return (
     <Sidebar collapsible="icon">
