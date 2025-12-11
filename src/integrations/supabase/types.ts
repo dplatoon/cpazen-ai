@@ -842,6 +842,62 @@ export type Database = {
           },
         ]
       }
+      webhook_retry_queue: {
+        Row: {
+          attempt: number
+          completed_at: string | null
+          created_at: string
+          event_type: string
+          id: string
+          last_error: string | null
+          max_retries: number
+          next_retry_at: string
+          original_log_id: string | null
+          payload: Json
+          status: string
+          user_id: string
+          webhook_id: string
+        }
+        Insert: {
+          attempt?: number
+          completed_at?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          last_error?: string | null
+          max_retries?: number
+          next_retry_at: string
+          original_log_id?: string | null
+          payload: Json
+          status?: string
+          user_id: string
+          webhook_id: string
+        }
+        Update: {
+          attempt?: number
+          completed_at?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          max_retries?: number
+          next_retry_at?: string
+          original_log_id?: string | null
+          payload?: Json
+          status?: string
+          user_id?: string
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_retry_queue_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_test_logs: {
         Row: {
           id: string
