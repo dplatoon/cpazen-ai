@@ -122,10 +122,25 @@ export default function MonitoringPage() {
   const { data: health, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['system-health'],
     queryFn: async (): Promise<SystemHealth> => {
-      const { data, error } = await supabase.functions.invoke('system-health');
+      const { data, error } = await supabase.functions.invoke('system-health', {
+        body: { send_alerts: false } // Don't send alerts on manual page load
+      });
 
       if (error) throw error;
       return data;
+    },
+    refetchInterval: 60000,
+  });
+
+  // Fetch webhook retry queue status
+  const { data: retryStatus } = useQuery({
+    queryKey: ['webhook-retry-status'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('webhook-retry', {
+        body: { mode: 'status' }
+      });
+      if (error) throw error;
+      return data as { period: string; counts: Record<string, number>; total: number };
     },
     refetchInterval: 60000,
   });
@@ -354,6 +369,7 @@ export default function MonitoringPage() {
           <TabsList>
             <TabsTrigger value="functions">Edge Functions</TabsTrigger>
             <TabsTrigger value="postbacks">Failed Postbacks</TabsTrigger>
+            <TabsTrigger value="retries">Retry Queue</TabsTrigger>
             <TabsTrigger value="fraud">High Fraud Clicks</TabsTrigger>
             <TabsTrigger value="alerts">Fraud Alerts</TabsTrigger>
             <TabsTrigger value="database">Database</TabsTrigger>
@@ -431,6 +447,79 @@ export default function MonitoringPage() {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="retries">
+            <Card>
+              <CardHeader>
+                <CardTitle>Webhook Retry Queue</CardTitle>
+                <CardDescription>
+                  Failed webhooks automatically retried with exponential backoff (max 5 retries)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!retryStatus ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <RefreshCw className="h-12 w-12 mx-auto mb-3 animate-spin" />
+                    <p>Loading retry queue status...</p>
+                  </div>
+                ) : retryStatus.total === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-green-600" />
+                    <p>No webhook retries in the last 24 hours</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Pending</p>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <p className="text-2xl font-bold mt-2 text-yellow-600">
+                        {retryStatus.counts.pending || 0}
+                      </p>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Completed</p>
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      </div>
+                      <p className="text-2xl font-bold mt-2 text-green-600">
+                        {retryStatus.counts.completed || 0}
+                      </p>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Failed</p>
+                        <XCircle className="h-4 w-4 text-red-600" />
+                      </div>
+                      <p className="text-2xl font-bold mt-2 text-red-600">
+                        {retryStatus.counts.failed || 0}
+                      </p>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Cancelled</p>
+                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <p className="text-2xl font-bold mt-2">
+                        {retryStatus.counts.cancelled || 0}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-medium mb-2">Retry Schedule</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Attempt 1: 1 second delay</li>
+                    <li>• Attempt 2: 2 seconds delay</li>
+                    <li>• Attempt 3: 4 seconds delay</li>
+                    <li>• Attempt 4: 8 seconds delay</li>
+                    <li>• Attempt 5: 16 seconds delay (max)</li>
+                  </ul>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

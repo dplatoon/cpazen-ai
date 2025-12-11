@@ -294,6 +294,49 @@ async function generateAlerts(
   });
 }
 
+// Trigger monitoring alerts if high-severity issues detected
+async function triggerMonitoringAlerts(
+  alerts: any[],
+  healthScore: number,
+  systemStatus: string
+): Promise<void> {
+  const highSeverityAlerts = alerts.filter(a => a.severity === "high");
+  
+  // Only send alerts if there are high-severity issues
+  if (highSeverityAlerts.length === 0) {
+    return;
+  }
+
+  try {
+    const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
+    
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/monitoring-alerts`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${supabaseKey}`,
+          "X-Internal-Secret": internalSecret || "",
+        },
+        body: JSON.stringify({
+          alerts,
+          healthScore,
+          systemStatus,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Failed to send monitoring alerts:", await response.text());
+    } else {
+      console.log("Monitoring alerts sent successfully");
+    }
+  } catch (error) {
+    console.error("Error triggering monitoring alerts:", error);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -301,6 +344,10 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Parse request body for optional parameters
+    const body = await req.json().catch(() => ({}));
+    const sendAlerts = body.send_alerts !== false; // Default to true
 
     // Check all edge functions in parallel
     const edgeFunctionChecks = await Promise.all(
@@ -337,8 +384,18 @@ serve(async (req) => {
     healthScore -= mediumSeverityAlerts * 5;
     healthScore = Math.max(0, healthScore);
 
+    const systemStatus = healthScore >= 90 ? "healthy" : healthScore >= 70 ? "degraded" : "unhealthy";
+
+    // Trigger email alerts for high-severity issues (run in background)
+    if (sendAlerts && highSeverityAlerts > 0) {
+      // Use EdgeRuntime.waitUntil for background task
+      EdgeRuntime.waitUntil(
+        triggerMonitoringAlerts(alerts, Number(healthScore.toFixed(0)), systemStatus)
+      );
+    }
+
     const overallStatus = {
-      status: healthScore >= 90 ? "healthy" : healthScore >= 70 ? "degraded" : "unhealthy",
+      status: systemStatus,
       healthScore: healthScore.toFixed(0),
       timestamp: new Date().toISOString(),
       alerts,

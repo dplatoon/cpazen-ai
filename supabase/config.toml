@@ -9,8 +9,23 @@ verify_jwt = true
 [functions.ai-copilot]
 verify_jwt = true
 
+[functions.ai-insights]
+verify_jwt = true
+
 [functions.ai-offer-description]
 verify_jwt = true
+
+[functions.bot-detection]
+verify_jwt = false
+
+[functions.fraud-detection]
+verify_jwt = false
+
+[functions.monitoring-alerts]
+verify_jwt = false
+
+[functions.postback]
+verify_jwt = false
 
 [functions.send-notification]
 verify_jwt = false
@@ -21,14 +36,11 @@ verify_jwt = false
 [functions.test-webhook]
 verify_jwt = true
 
+[functions.track-click]
+verify_jwt = false
+
 [functions.webhook-handler]
 verify_jwt = false
 
-[functions.fraud-detection]
-verify_jwt = false
-
-[functions.postback]
-verify_jwt = false
-
-[functions.track-click]
+[functions.webhook-retry]
 verify_jwt = false
