@@ -661,6 +661,30 @@ export type Database = {
         }
         Relationships: []
       }
+      postback_rate_limits: {
+        Row: {
+          click_id: string
+          first_request_at: string
+          id: string
+          last_request_at: string
+          request_count: number
+        }
+        Insert: {
+          click_id: string
+          first_request_at?: string
+          id?: string
+          last_request_at?: string
+          request_count?: number
+        }
+        Update: {
+          click_id?: string
+          first_request_at?: string
+          id?: string
+          last_request_at?: string
+          request_count?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_name: string | null
@@ -1020,6 +1044,7 @@ export type Database = {
         Args: { p_status: string; p_user_id: string }
         Returns: boolean
       }
+      cleanup_old_postback_rate_limits: { Args: never; Returns: undefined }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       generate_security_token_for_click: {
         Args: { click_id_param: string }
@@ -1097,6 +1122,20 @@ export type Database = {
         }[]
       }
       get_user_secret_key_masked: { Args: never; Returns: string }
+      get_user_webhooks: {
+        Args: never
+        Returns: {
+          created_at: string
+          events: string[]
+          id: string
+          is_active: boolean
+          name: string
+          secret_key_masked: string
+          updated_at: string
+          url: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
