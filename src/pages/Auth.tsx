@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Footer } from '@/components/layout/Footer';
+import { TwoFactorVerify } from '@/components/auth/TwoFactorVerify';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
@@ -16,6 +17,7 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [requires2FA, setRequires2FA] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -30,12 +32,37 @@ export default function Auth() {
     checkUser();
   }, [navigate]);
 
+  const check2FAStatus = async (userEmail: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('check_2fa_status', { p_email: userEmail });
+      if (error) {
+        console.error('Error checking 2FA status:', error);
+        return false;
+      }
+      return data === true;
+    } catch (err) {
+      console.error('Error checking 2FA status:', err);
+      return false;
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
+      // First check if user has 2FA enabled
+      const has2FA = await check2FAStatus(email);
+      
+      if (has2FA) {
+        // Show 2FA verification screen
+        setRequires2FA(true);
+        setLoading(false);
+        return;
+      }
+
+      // No 2FA, proceed with normal sign in
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -132,6 +159,46 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
+  const handle2FASuccess = () => {
+    toast({
+      title: "Welcome back!",
+      description: "Successfully signed in to Cpazen.",
+    });
+    navigate('/');
+  };
+
+  const handle2FABack = () => {
+    setRequires2FA(false);
+    setPassword('');
+  };
+
+  // Show 2FA verification screen
+  if (requires2FA) {
+    return (
+      <div className="min-h-screen bg-gradient-background flex flex-col">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-foreground mb-2">
+                AI CPA Tracker That Turns Clicks into Profit
+              </h1>
+              <p className="text-foreground-muted">
+                Welcome to <span className="bg-gradient-brand bg-clip-text text-transparent">Cpazen</span>
+              </p>
+            </div>
+            <TwoFactorVerify
+              email={email}
+              password={password}
+              onSuccess={handle2FASuccess}
+              onBack={handle2FABack}
+            />
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-background flex flex-col">
