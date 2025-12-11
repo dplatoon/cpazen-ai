@@ -3,7 +3,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET")!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +16,8 @@ const EDGE_FUNCTIONS = [
   "ai-campaign-optimizer",
   "ai-chat",
   "ai-offer-description",
-  "send-notification",
+  "fraud-detection",
+  "bot-detection",
 ];
 
 async function checkEdgeFunction(functionName: string): Promise<any> {
@@ -32,7 +32,7 @@ async function checkEdgeFunction(functionName: string): Promise<any> {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${supabaseKey}`,
         },
-        body: JSON.stringify({ health_check: true, secret: internalSecret }),
+        body: JSON.stringify({ health_check: true }),
       }
     );
 
@@ -62,7 +62,6 @@ async function getDatabaseMetrics(supabase: any): Promise<any> {
   try {
     const startTime = Date.now();
 
-    // Count total records in key tables
     const [clicksCount, conversionsCount, campaignsCount] = await Promise.all([
       supabase.from("clicks").select("*", { count: "exact", head: true }),
       supabase.from("conversions").select("*", { count: "exact", head: true }),
@@ -92,7 +91,6 @@ async function getDatabaseMetrics(supabase: any): Promise<any> {
 
 async function getErrorRates(supabase: any): Promise<any> {
   try {
-    // Get error logs from last 24 hours (you'd need to implement error logging)
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     const { count: totalClicks } = await supabase
@@ -121,6 +119,181 @@ async function getErrorRates(supabase: any): Promise<any> {
   }
 }
 
+async function getHighFraudScoreClicks(supabase: any): Promise<any> {
+  try {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    
+    // Get clicks with fraud score >= 70 (high risk)
+    const { data: highFraudClicks, count } = await supabase
+      .from("clicks")
+      .select("id, campaign_id, fraud_score, ip_address, country, created_at", { count: "exact" })
+      .gte("fraud_score", 70)
+      .gte("created_at", twentyFourHoursAgo)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    return {
+      count: count || 0,
+      recentClicks: highFraudClicks || [],
+      threshold: 70,
+      period: "24h",
+    };
+  } catch (error) {
+    console.error("Error fetching high fraud score clicks:", error);
+    return {
+      count: 0,
+      recentClicks: [],
+      threshold: 70,
+      period: "24h",
+      error: error.message,
+    };
+  }
+}
+
+async function getFailedPostbacks(supabase: any): Promise<any> {
+  try {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    
+    // Get failed webhook deliveries (status code >= 400 or null)
+    const { data: failedWebhooks, count } = await supabase
+      .from("webhook_logs")
+      .select("id, webhook_id, event_type, response_status, delivered_at, response_body", { count: "exact" })
+      .or("response_status.gte.400,response_status.is.null")
+      .gte("delivered_at", twentyFourHoursAgo)
+      .order("delivered_at", { ascending: false })
+      .limit(20);
+
+    // Also check for conversion postbacks that might have failed
+    const { count: totalConversions } = await supabase
+      .from("conversions")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", twentyFourHoursAgo);
+
+    return {
+      failedCount: count || 0,
+      recentFailures: failedWebhooks || [],
+      totalConversions: totalConversions || 0,
+      period: "24h",
+    };
+  } catch (error) {
+    console.error("Error fetching failed postbacks:", error);
+    return {
+      failedCount: 0,
+      recentFailures: [],
+      totalConversions: 0,
+      period: "24h",
+      error: error.message,
+    };
+  }
+}
+
+async function getPendingFraudAlerts(supabase: any): Promise<any> {
+  try {
+    const { data: pendingAlerts, count } = await supabase
+      .from("fraud_alerts")
+      .select("id, alert_type, severity, description, created_at, campaign_id", { count: "exact" })
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    const highSeverityCount = pendingAlerts?.filter((a: any) => a.severity === "high").length || 0;
+    const mediumSeverityCount = pendingAlerts?.filter((a: any) => a.severity === "medium").length || 0;
+
+    return {
+      totalPending: count || 0,
+      highSeverity: highSeverityCount,
+      mediumSeverity: mediumSeverityCount,
+      recentAlerts: pendingAlerts || [],
+    };
+  } catch (error) {
+    console.error("Error fetching pending fraud alerts:", error);
+    return {
+      totalPending: 0,
+      highSeverity: 0,
+      mediumSeverity: 0,
+      recentAlerts: [],
+      error: error.message,
+    };
+  }
+}
+
+async function generateAlerts(
+  edgeFunctions: any[],
+  highFraudClicks: any,
+  failedPostbacks: any,
+  fraudAlerts: any,
+  errorRates: any
+): Promise<any[]> {
+  const alerts: any[] = [];
+
+  // Edge function errors
+  const unhealthyFunctions = edgeFunctions.filter(f => f.status !== "healthy");
+  unhealthyFunctions.forEach(func => {
+    alerts.push({
+      id: `ef-${func.name}`,
+      type: "edge_function_error",
+      severity: "high",
+      title: `Edge Function Error: ${func.name}`,
+      description: func.error || `Function returned status ${func.statusCode}`,
+      timestamp: func.lastChecked,
+    });
+  });
+
+  // High fraud score alerts
+  if (highFraudClicks.count >= 10) {
+    alerts.push({
+      id: "fraud-high-volume",
+      type: "high_fraud_score",
+      severity: highFraudClicks.count >= 50 ? "high" : "medium",
+      title: "High Volume of Fraudulent Clicks",
+      description: `${highFraudClicks.count} clicks with fraud score ≥70 in the last 24 hours`,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // Failed postback alerts
+  if (failedPostbacks.failedCount > 0) {
+    alerts.push({
+      id: "postback-failures",
+      type: "failed_postback",
+      severity: failedPostbacks.failedCount >= 10 ? "high" : "medium",
+      title: "Failed Webhook Deliveries",
+      description: `${failedPostbacks.failedCount} webhook deliveries failed in the last 24 hours`,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // Pending fraud alerts
+  if (fraudAlerts.highSeverity > 0) {
+    alerts.push({
+      id: "fraud-alerts-pending",
+      type: "pending_fraud_alert",
+      severity: "high",
+      title: "Unresolved High-Severity Fraud Alerts",
+      description: `${fraudAlerts.highSeverity} high-severity fraud alerts pending review`,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // High bot rate alert
+  const botRate = parseFloat(errorRates.botRate || 0);
+  if (botRate >= 20) {
+    alerts.push({
+      id: "high-bot-rate",
+      type: "high_bot_rate",
+      severity: botRate >= 40 ? "high" : "medium",
+      title: "High Bot Traffic Rate",
+      description: `Bot rate is ${botRate}% in the last 24 hours`,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  return alerts.sort((a, b) => {
+    const severityOrder = { high: 0, medium: 1, low: 2 };
+    return severityOrder[a.severity] - severityOrder[b.severity];
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -134,30 +307,56 @@ serve(async (req) => {
       EDGE_FUNCTIONS.map(checkEdgeFunction)
     );
 
-    // Get database metrics
-    const databaseMetrics = await getDatabaseMetrics(supabase);
+    // Get all metrics in parallel
+    const [databaseMetrics, errorRates, highFraudClicks, failedPostbacks, fraudAlerts] = await Promise.all([
+      getDatabaseMetrics(supabase),
+      getErrorRates(supabase),
+      getHighFraudScoreClicks(supabase),
+      getFailedPostbacks(supabase),
+      getPendingFraudAlerts(supabase),
+    ]);
 
-    // Get error rates
-    const errorRates = await getErrorRates(supabase);
+    // Generate alerts based on metrics
+    const alerts = await generateAlerts(
+      edgeFunctionChecks,
+      highFraudClicks,
+      failedPostbacks,
+      fraudAlerts,
+      errorRates
+    );
 
     // Calculate overall health
     const healthyFunctions = edgeFunctionChecks.filter(f => f.status === "healthy").length;
     const totalFunctions = edgeFunctionChecks.length;
-    const healthScore = (healthyFunctions / totalFunctions) * 100;
+    
+    // Adjust health score based on alerts
+    let healthScore = (healthyFunctions / totalFunctions) * 100;
+    const highSeverityAlerts = alerts.filter(a => a.severity === "high").length;
+    const mediumSeverityAlerts = alerts.filter(a => a.severity === "medium").length;
+    healthScore -= highSeverityAlerts * 15;
+    healthScore -= mediumSeverityAlerts * 5;
+    healthScore = Math.max(0, healthScore);
 
     const overallStatus = {
-      status: healthScore === 100 ? "healthy" : healthScore >= 80 ? "degraded" : "unhealthy",
+      status: healthScore >= 90 ? "healthy" : healthScore >= 70 ? "degraded" : "unhealthy",
       healthScore: healthScore.toFixed(0),
       timestamp: new Date().toISOString(),
+      alerts,
       edgeFunctions: edgeFunctionChecks,
       database: databaseMetrics,
       errorRates,
+      highFraudClicks,
+      failedPostbacks,
+      fraudAlerts,
       summary: {
         totalFunctions,
         healthyFunctions,
         avgResponseTime: Math.round(
           edgeFunctionChecks.reduce((sum, f) => sum + f.responseTime, 0) / totalFunctions
         ),
+        totalAlerts: alerts.length,
+        highSeverityAlerts,
+        mediumSeverityAlerts,
       },
     };
 
