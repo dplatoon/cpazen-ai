@@ -36,6 +36,9 @@ verify_jwt = false
 [functions.test-webhook]
 verify_jwt = true
 
+[functions.totp-2fa]
+verify_jwt = false
+
 [functions.track-click]
 verify_jwt = false
 

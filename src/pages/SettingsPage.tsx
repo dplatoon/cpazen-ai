@@ -1,8 +1,9 @@
 import { ModernLayout } from '@/components/layout/ModernLayout';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
+import { TwoFactorSettings } from '@/components/settings/TwoFactorSettings';
 import { AnalyticsExport } from '@/components/analytics/AnalyticsExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bell, Download, User, Key } from 'lucide-react';
+import { Bell, Download, User, Key, Shield } from 'lucide-react';
 
 export default function SettingsPage() {
   return (
@@ -16,10 +17,14 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="notifications" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-5">
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
               Notifications
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Security
             </TabsTrigger>
             <TabsTrigger value="export" className="flex items-center gap-2">
               <Download className="h-4 w-4" />
@@ -37,6 +42,10 @@ export default function SettingsPage() {
 
           <TabsContent value="notifications">
             <NotificationSettings />
+          </TabsContent>
+
+          <TabsContent value="security">
+            <TwoFactorSettings />
           </TabsContent>
 
           <TabsContent value="export">

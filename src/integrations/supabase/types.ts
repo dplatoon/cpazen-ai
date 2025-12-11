@@ -804,6 +804,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_2fa: {
+        Row: {
+          backup_codes: string[] | null
+          created_at: string
+          id: string
+          is_enabled: boolean
+          totp_secret: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backup_codes?: string[] | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          totp_secret?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          backup_codes?: string[] | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          totp_secret?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1044,6 +1074,7 @@ export type Database = {
         Args: { p_status: string; p_user_id: string }
         Returns: boolean
       }
+      check_2fa_status: { Args: { p_email: string }; Returns: boolean }
       cleanup_old_postback_rate_limits: { Args: never; Returns: undefined }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       generate_security_token_for_click: {
@@ -1110,6 +1141,13 @@ export type Database = {
           offer_url: string
           payout: number
           status: string
+        }[]
+      }
+      get_my_2fa_status: {
+        Args: never
+        Returns: {
+          has_backup_codes: boolean
+          is_enabled: boolean
         }[]
       }
       get_user_activity_admin: {
