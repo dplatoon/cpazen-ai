@@ -7,6 +7,92 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limiting: max 3 postbacks per click_id per hour
+const RATE_LIMIT_MAX_REQUESTS = 3;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+async function checkRateLimit(supabase: any, clickId: string): Promise<{ allowed: boolean; remaining: number }> {
+  try {
+    // Try to get existing rate limit record
+    const { data: existing, error: fetchError } = await supabase
+      .from('postback_rate_limits')
+      .select('*')
+      .eq('click_id', clickId)
+      .single();
+
+    const now = new Date();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      // PGRST116 = not found, which is fine
+      console.error('[INTERNAL] Rate limit fetch error:', fetchError);
+      // Allow on error to not block legitimate traffic
+      return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS };
+    }
+
+    if (!existing) {
+      // First request for this click_id
+      const { error: insertError } = await supabase
+        .from('postback_rate_limits')
+        .insert({
+          click_id: clickId,
+          request_count: 1,
+          first_request_at: now.toISOString(),
+          last_request_at: now.toISOString()
+        });
+
+      if (insertError) {
+        console.error('[INTERNAL] Rate limit insert error:', insertError);
+      }
+      return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
+    }
+
+    // Check if window has expired
+    const firstRequestAt = new Date(existing.first_request_at);
+    const windowExpired = (now.getTime() - firstRequestAt.getTime()) > RATE_LIMIT_WINDOW_MS;
+
+    if (windowExpired) {
+      // Reset the window
+      const { error: updateError } = await supabase
+        .from('postback_rate_limits')
+        .update({
+          request_count: 1,
+          first_request_at: now.toISOString(),
+          last_request_at: now.toISOString()
+        })
+        .eq('click_id', clickId);
+
+      if (updateError) {
+        console.error('[INTERNAL] Rate limit reset error:', updateError);
+      }
+      return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
+    }
+
+    // Check if within limit
+    if (existing.request_count >= RATE_LIMIT_MAX_REQUESTS) {
+      return { allowed: false, remaining: 0 };
+    }
+
+    // Increment counter
+    const { error: incrementError } = await supabase
+      .from('postback_rate_limits')
+      .update({
+        request_count: existing.request_count + 1,
+        last_request_at: now.toISOString()
+      })
+      .eq('click_id', clickId);
+
+    if (incrementError) {
+      console.error('[INTERNAL] Rate limit increment error:', incrementError);
+    }
+
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - existing.request_count - 1 };
+  } catch (error) {
+    console.error('[INTERNAL] Rate limit check failed:', error);
+    // Allow on error to not block legitimate traffic
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -106,10 +192,28 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Rate limit check per click_id to prevent bulk fraud
+    const rateLimit = await checkRateLimit(supabase, click_id);
+    if (!rateLimit.allowed) {
+      console.warn(`Rate limit exceeded for click_id: ${click_id}`);
+      return new Response(JSON.stringify({ 
+        error: 'Rate limit exceeded',
+        message: 'Too many postback requests for this click. Please try again later.'
+      }), {
+        status: 429,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': '0',
+          'Retry-After': '3600'
+        }
+      });
+    }
+
     // Get click data to verify it exists
     const { data: clickData, error: clickError } = await supabase
       .from('clicks')
-      .select('click_id, campaign_id')
+      .select('click_id, campaign_id, user_id')
       .eq('click_id', click_id)
       .single();
 
@@ -125,8 +229,8 @@ serve(async (req) => {
     if (security_token) {
       const { data: isValid, error: validationError } = await supabase
         .rpc('validate_postback_security_token', {
-          click_id_param: click_id,
-          provided_token: security_token
+          _click_id: click_id,
+          _token: security_token
         });
       
       if (validationError) {
@@ -145,28 +249,13 @@ serve(async (req) => {
       }
     }
 
-    // Get click details
-    const { data: click, error: clickError } = await supabase
-      .from('clicks')
-      .select('user_id, campaign_id')
-      .eq('click_id', click_id)
-      .single();
-
-    if (clickError || !click) {
-      console.error('[INTERNAL] Click lookup failed:', clickError);
-      return new Response(JSON.stringify({ error: 'Invalid click reference' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
     // Upsert conversion
     const { data: conversion, error: conversionError } = await supabase
       .from('conversions')
       .upsert({
         click_id: click_id,
-        campaign_id: click.campaign_id,
-        user_id: click.user_id,
+        campaign_id: clickData.campaign_id,
+        user_id: clickData.user_id,
         payout: payout,
         status: status,
         network_postback_raw: rawData
@@ -187,7 +276,8 @@ serve(async (req) => {
     console.log('Conversion recorded:', {
       click_id,
       payout,
-      status
+      status,
+      rate_limit_remaining: rateLimit.remaining
     });
 
     // Trigger webhooks for conversion event (fire and forget)
@@ -198,12 +288,12 @@ serve(async (req) => {
         'Authorization': `Bearer ${supabaseKey}`,
       },
       body: JSON.stringify({
-        userId: click.user_id,
+        userId: clickData.user_id,
         eventType: 'conversion',
         data: {
           conversion_id: conversion.id,
           click_id: click_id,
-          campaign_id: click.campaign_id,
+          campaign_id: clickData.campaign_id,
           payout,
           status,
           timestamp: new Date().toISOString(),
@@ -216,7 +306,11 @@ serve(async (req) => {
       conversion_id: conversion.id,
       message: 'Conversion recorded successfully'
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        'X-RateLimit-Remaining': String(rateLimit.remaining)
+      }
     });
 
   } catch (error) {

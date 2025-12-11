@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Webhook, Plus, Trash2, Copy, Eye, EyeOff } from 'lucide-react';
+import { Webhook, Plus, Trash2, Copy } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 
 interface WebhookConfig {
@@ -17,7 +17,7 @@ interface WebhookConfig {
   name: string;
   url: string;
   events: string[];
-  secret_key: string;
+  secret_key_masked: string; // Only masked version available client-side
   is_active: boolean;
   created_at: string;
 }
@@ -100,16 +100,13 @@ export function WebhookManager() {
   const [url, setUrl] = useState('');
   const [urlError, setUrlError] = useState<string | null>(null);
   const [selectedEvents, setSelectedEvents] = useState<string[]>(['conversion']);
-  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const queryClient = useQueryClient();
 
   const { data: webhooks, isLoading } = useQuery({
     queryKey: ['webhooks'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('webhooks')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Use RPC function that returns masked secret keys only
+      const { data, error } = await supabase.rpc('get_user_webhooks');
 
       if (error) throw error;
       return data as WebhookConfig[];
@@ -190,13 +187,9 @@ export function WebhookManager() {
     },
   });
 
-  const copySecret = (secret: string) => {
-    navigator.clipboard.writeText(secret);
-    toast.success('Secret key copied to clipboard');
-  };
-
-  const toggleSecretVisibility = (id: string) => {
-    setShowSecrets(prev => ({ ...prev, [id]: !prev[id] }));
+  const copySecret = (maskedSecret: string) => {
+    navigator.clipboard.writeText(maskedSecret);
+    toast.info('Masked secret key copied. Full secret is only available server-side for security.');
   };
 
   const isFormValid = name && url && selectedEvents.length > 0 && !urlError;
@@ -344,29 +337,20 @@ export function WebhookManager() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 font-mono text-xs bg-muted p-2 rounded">
-                    {showSecrets[webhook.id]
-                      ? webhook.secret_key
-                      : '•'.repeat(32)}
+                    {webhook.secret_key_masked}
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => toggleSecretVisibility(webhook.id)}
-                  >
-                    {showSecrets[webhook.id] ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => copySecret(webhook.secret_key)}
+                    onClick={() => copySecret(webhook.secret_key_masked)}
+                    title="Copy masked secret"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Full secret key is available only in webhook signature headers for security.
+                </p>
               </div>
             ))}
           </div>
