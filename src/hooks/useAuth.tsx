@@ -11,6 +11,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+async function registerSession(accessToken: string) {
+  const deviceInfo = {
+    screenWidth: typeof window !== 'undefined' ? window.screen.width : null,
+    screenHeight: typeof window !== 'undefined' ? window.screen.height : null,
+    language: typeof navigator !== 'undefined' ? navigator.language : null,
+  };
+  
+  try {
+    await supabase.rpc('register_session', {
+      p_session_token: accessToken,
+      p_device_info: deviceInfo,
+      p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+    });
+  } catch (error) {
+    console.error('Failed to register session:', error);
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -24,6 +42,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Register session on sign in
+        if (event === 'SIGNED_IN' && session?.access_token) {
+          setTimeout(() => {
+            registerSession(session.access_token);
+          }, 0);
+        }
       }
     );
 
@@ -32,6 +57,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // Register existing session
+      if (session?.access_token) {
+        registerSession(session.access_token);
+      }
     });
 
     return () => subscription.unsubscribe();
