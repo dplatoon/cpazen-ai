@@ -855,6 +855,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          created_at: string
+          device_info: Json | null
+          id: string
+          ip_address: string | null
+          is_current: boolean | null
+          last_active_at: string
+          revoked_at: string | null
+          session_token: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: Json | null
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean | null
+          last_active_at?: string
+          revoked_at?: string | null
+          session_token: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: Json | null
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean | null
+          last_active_at?: string
+          revoked_at?: string | null
+          session_token?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       webhook_logs: {
         Row: {
           delivered_at: string
@@ -1160,6 +1199,18 @@ export type Database = {
         }[]
       }
       get_user_secret_key_masked: { Args: never; Returns: string }
+      get_user_sessions: {
+        Args: { current_token?: string }
+        Returns: {
+          created_at: string
+          device_info: Json
+          id: string
+          ip_address: string
+          is_current: boolean
+          last_active_at: string
+          user_agent: string
+        }[]
+      }
       get_user_webhooks: {
         Args: never
         Returns: {
@@ -1181,6 +1232,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      register_session: {
+        Args: {
+          p_device_info?: Json
+          p_ip_address?: string
+          p_session_token: string
+          p_user_agent?: string
+        }
+        Returns: string
+      }
+      revoke_all_other_sessions: {
+        Args: { current_token: string }
+        Returns: number
+      }
+      revoke_session: { Args: { session_id: string }; Returns: boolean }
       rotate_user_secret_key: { Args: never; Returns: string }
       validate_postback_security_token: {
         Args: { _click_id: string; _token: string }
