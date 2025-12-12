@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       automation_rules: {
         Row: {
           action_json: Json
@@ -1151,6 +1187,26 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_audit_logs_admin: {
+        Args: {
+          p_action_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_user_filter?: string
+        }
+        Returns: {
+          action: string
+          created_at: string
+          details: Json
+          entity_id: string
+          entity_type: string
+          id: string
+          ip_address: string
+          user_agent: string
+          user_email: string
+          user_id: string
+        }[]
+      }
       get_available_offers: {
         Args: never
         Returns: {
@@ -1231,6 +1287,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_audit_event: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_entity_id?: string
+          p_entity_type: string
+          p_ip_address?: string
+          p_user_agent?: string
+          p_user_id: string
+        }
+        Returns: string
       }
       register_session: {
         Args: {
