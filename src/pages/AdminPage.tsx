@@ -6,10 +6,11 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Users, AlertTriangle, Activity, TrendingUp, DollarSign, Package, UserCog } from 'lucide-react';
+import { Shield, Users, AlertTriangle, Activity, TrendingUp, DollarSign, Package, UserCog, FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AdminOfferManager } from '@/components/admin/AdminOfferManager';
 import { UserManagement } from '@/components/admin/UserManagement';
+import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -296,6 +297,10 @@ export default function AdminPage() {
       <Tabs defaultValue="activity" className="space-y-4">
         <TabsList>
           <TabsTrigger value="activity">Recent Activity</TabsTrigger>
+          <TabsTrigger value="audit-logs">
+            <FileText className="mr-2 h-4 w-4" />
+            Audit Logs
+          </TabsTrigger>
           <TabsTrigger value="offers">
             <Package className="mr-2 h-4 w-4" />
             Offers
@@ -367,6 +372,10 @@ export default function AdminPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="audit-logs" className="space-y-4">
+          <AuditLogViewer />
         </TabsContent>
 
         <TabsContent value="offers" className="space-y-4">
