@@ -12,6 +12,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from '@tanstack/react-query';
+import { logAuditEvent } from "@/hooks/useAuditLogs";
 
 const timezones = [
   "UTC", "America/New_York", "America/Los_Angeles", "America/Chicago", 
@@ -79,6 +80,7 @@ export default function ProfilePage() {
   };
 
   const handleRotateSecretKey = async () => {
+    if (!user) return;
     setIsRotating(true);
     try {
       const newSecretKey = await rotateSecretKey();
@@ -86,6 +88,9 @@ export default function ProfilePage() {
       // Invalidate and refetch secret key
       queryClient.invalidateQueries({ queryKey: ['secret-key-masked'] });
       await refetchSecretKey();
+      
+      // Log audit event
+      await logAuditEvent(user.id, 'secret_key_rotated', 'profile', user.id);
       
       toast({
         title: "Secret Key Rotated",
@@ -111,6 +116,9 @@ export default function ProfilePage() {
       });
       
       if (error) throw error;
+      
+      // Log audit event
+      await logAuditEvent(user.id, 'password_reset_requested', 'auth', user.id);
       
       toast({
         title: "Password Reset Email Sent",

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { logAuditEvent } from '@/hooks/useAuditLogs';
 import { Shield, ShieldCheck, ShieldOff, Copy, RefreshCw, Key, Loader2 } from 'lucide-react';
 
 interface TwoFAStatus {
@@ -92,6 +93,9 @@ export function TwoFactorSettings() {
       if (response.error) throw response.error;
       if (response.data.error) throw new Error(response.data.error);
 
+      // Log audit event
+      if (user) await logAuditEvent(user.id, '2fa_enabled', 'security', user.id);
+
       toast({ title: '2FA Enabled', description: 'Two-factor authentication is now active' });
       setSetupDialogOpen(false);
       setVerifyCode('');
@@ -122,6 +126,9 @@ export function TwoFactorSettings() {
       if (response.error) throw response.error;
       if (response.data.error) throw new Error(response.data.error);
 
+      // Log audit event
+      if (user) await logAuditEvent(user.id, '2fa_disabled', 'security', user.id);
+
       toast({ title: '2FA Disabled', description: 'Two-factor authentication has been removed' });
       setDisableDialogOpen(false);
       setDisableCode('');
@@ -151,6 +158,9 @@ export function TwoFactorSettings() {
 
       if (response.error) throw response.error;
       if (response.data.error) throw new Error(response.data.error);
+
+      // Log audit event
+      if (user) await logAuditEvent(user.id, '2fa_backup_codes_regenerated', 'security', user.id);
 
       setBackupCodes(response.data.backupCodes);
       setBackupDialogOpen(true);
