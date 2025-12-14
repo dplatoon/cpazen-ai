@@ -13,7 +13,7 @@ const corsHeaders = {
 
 interface NotificationRequest {
   userId: string;
-  type: "conversion" | "daily_summary" | "low_performance" | "weekly_report";
+  type: "conversion" | "daily_summary" | "low_performance" | "weekly_report" | "security_alert";
   data: any;
 }
 
@@ -97,6 +97,30 @@ const emailTemplates = {
         </ol>
         <a href="https://cpazen.com/analytics" style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
           View Full Report
+        </a>
+      </div>
+    `,
+  }),
+  security_alert: (data: any) => ({
+    subject: `🔐 Security Alert: ${data.action.replace(/_/g, ' ')}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #ef4444;">Security Alert</h1>
+        <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
+          <p><strong>Action:</strong> ${data.action.replace(/_/g, ' ')}</p>
+          <p><strong>Performed By:</strong> ${data.user_email || 'Unknown'}</p>
+          <p><strong>Entity Type:</strong> ${data.entity_type}</p>
+          ${data.entity_id ? `<p><strong>Entity ID:</strong> ${data.entity_id}</p>` : ''}
+          <p><strong>Time:</strong> ${new Date(data.created_at).toLocaleString()}</p>
+          ${data.ip_address ? `<p><strong>IP Address:</strong> ${data.ip_address}</p>` : ''}
+        </div>
+        ${data.details ? `
+          <h3>Additional Details:</h3>
+          <pre style="background: #f3f4f6; padding: 15px; border-radius: 8px; font-size: 12px; overflow-x: auto;">${JSON.stringify(data.details, null, 2)}</pre>
+        ` : ''}
+        <p style="margin-top: 20px;">If you did not authorize this action, please review your account security immediately.</p>
+        <a href="https://cpazen.com/admin" style="display: inline-block; background: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          Review Audit Logs
         </a>
       </div>
     `,

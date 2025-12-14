@@ -4,6 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -39,11 +45,14 @@ import {
   ChevronRight,
   RefreshCw,
   Filter,
-  Download
+  Download,
+  CalendarIcon,
+  X
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 // Critical actions that trigger real-time alerts
 const CRITICAL_ACTIONS = [
@@ -54,6 +63,40 @@ const CRITICAL_ACTIONS = [
   '2fa_disabled',
   'secret_key_rotated',
 ];
+
+async function sendSecurityAlertEmail(log: any) {
+  try {
+    // Get all admin users to notify
+    const { data: adminRoles } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'admin');
+    
+    if (!adminRoles || adminRoles.length === 0) return;
+
+    // Send notification to each admin
+    for (const admin of adminRoles) {
+      await supabase.functions.invoke('send-notification', {
+        body: {
+          userId: admin.user_id,
+          type: 'security_alert',
+          data: {
+            action: log.action,
+            user_email: log.user_email,
+            entity_type: log.entity_type,
+            entity_id: log.entity_id,
+            details: log.details,
+            ip_address: log.ip_address,
+            created_at: log.created_at,
+          },
+        },
+      });
+    }
+    console.log('Security alert emails sent to admins');
+  } catch (error) {
+    console.error('Failed to send security alert email:', error);
+  }
+}
 
 function exportToCSV(logs: AuditLog[]) {
   const headers = ['Timestamp', 'User Email', 'Action', 'Entity Type', 'Entity ID', 'IP Address', 'User Agent', 'Details'];
@@ -184,17 +227,27 @@ export function AuditLogViewer() {
   const [page, setPage] = useState(0);
   const [actionFilter, setActionFilter] = useState<string | null>(null);
   const [searchEmail, setSearchEmail] = useState('');
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const pageSize = 50;
 
   const { data: logs, isLoading, refetch, isRefetching } = useAuditLogs({
     limit: pageSize,
     offset: page * pageSize,
     actionFilter: actionFilter === 'all' ? null : actionFilter,
+    startDate: startDate ? startOfDay(startDate) : null,
+    endDate: endDate ? endOfDay(endDate) : null,
   });
 
   const filteredLogs = logs?.filter(log => 
     !searchEmail || log.user_email?.toLowerCase().includes(searchEmail.toLowerCase())
   );
+
+  const clearDateFilters = () => {
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setPage(0);
+  };
 
   // Real-time alerts for critical admin actions
   useEffect(() => {
@@ -208,12 +261,14 @@ export function AuditLogViewer() {
           table: 'audit_logs',
         },
         (payload) => {
-          const newLog = payload.new as { action: string; user_email?: string; entity_type: string };
+          const newLog = payload.new as { action: string; user_email?: string; entity_type: string; entity_id?: string; details?: any; ip_address?: string; created_at?: string };
           if (CRITICAL_ACTIONS.includes(newLog.action)) {
             toast.warning(`Security Alert: ${newLog.action.replace(/_/g, ' ')}`, {
               description: `By ${newLog.user_email || 'Unknown'} on ${newLog.entity_type}`,
               duration: 10000,
             });
+            // Send email notification to admins
+            sendSecurityAlertEmail(newLog);
             refetch();
           }
         }
@@ -286,7 +341,7 @@ export function AuditLogViewer() {
       </CardHeader>
       <CardContent>
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-6">
+        <div className="flex flex-wrap gap-4 mb-6 items-end">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select
@@ -309,6 +364,69 @@ export function AuditLogViewer() {
               </SelectContent>
             </Select>
           </div>
+          
+          {/* Date Range Filters */}
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-[140px] justify-start text-left font-normal",
+                    !startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? format(startDate, "MMM d, yyyy") : "Start date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={(date) => {
+                    setStartDate(date);
+                    setPage(0);
+                  }}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            <span className="text-muted-foreground">to</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-[140px] justify-start text-left font-normal",
+                    !endDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(endDate, "MMM d, yyyy") : "End date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={(date) => {
+                    setEndDate(date);
+                    setPage(0);
+                  }}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            {(startDate || endDate) && (
+              <Button variant="ghost" size="icon" onClick={clearDateFilters}>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
           <Input
             placeholder="Search by email..."
             value={searchEmail}

@@ -20,19 +20,30 @@ interface UseAuditLogsParams {
   offset?: number;
   actionFilter?: string | null;
   userFilter?: string | null;
+  startDate?: Date | null;
+  endDate?: Date | null;
 }
 
 export function useAuditLogs(params: UseAuditLogsParams = {}) {
-  const { limit = 100, offset = 0, actionFilter = null, userFilter = null } = params;
+  const { 
+    limit = 100, 
+    offset = 0, 
+    actionFilter = null, 
+    userFilter = null,
+    startDate = null,
+    endDate = null,
+  } = params;
 
   return useQuery({
-    queryKey: ['audit-logs', limit, offset, actionFilter, userFilter],
+    queryKey: ['audit-logs', limit, offset, actionFilter, userFilter, startDate?.toISOString(), endDate?.toISOString()],
     queryFn: async (): Promise<AuditLog[]> => {
       const { data, error } = await supabase.rpc('get_audit_logs_admin', {
         p_limit: limit,
         p_offset: offset,
         p_action_filter: actionFilter,
         p_user_filter: userFilter,
+        p_start_date: startDate?.toISOString() || null,
+        p_end_date: endDate?.toISOString() || null,
       });
       if (error) throw error;
       return (data || []) as AuditLog[];

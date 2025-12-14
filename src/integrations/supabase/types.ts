@@ -1187,26 +1187,49 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_audit_logs_admin: {
-        Args: {
-          p_action_filter?: string
-          p_limit?: number
-          p_offset?: number
-          p_user_filter?: string
-        }
-        Returns: {
-          action: string
-          created_at: string
-          details: Json
-          entity_id: string
-          entity_type: string
-          id: string
-          ip_address: string
-          user_agent: string
-          user_email: string
-          user_id: string
-        }[]
-      }
+      get_audit_logs_admin:
+        | {
+            Args: {
+              p_action_filter?: string
+              p_limit?: number
+              p_offset?: number
+              p_user_filter?: string
+            }
+            Returns: {
+              action: string
+              created_at: string
+              details: Json
+              entity_id: string
+              entity_type: string
+              id: string
+              ip_address: string
+              user_agent: string
+              user_email: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: {
+              p_action_filter?: string
+              p_end_date?: string
+              p_limit?: number
+              p_offset?: number
+              p_start_date?: string
+              p_user_filter?: string
+            }
+            Returns: {
+              action: string
+              created_at: string
+              details: Json
+              entity_id: string
+              entity_type: string
+              id: string
+              ip_address: string
+              user_agent: string
+              user_email: string
+              user_id: string
+            }[]
+          }
       get_available_offers: {
         Args: never
         Returns: {
