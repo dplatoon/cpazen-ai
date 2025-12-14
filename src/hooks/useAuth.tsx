@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { logAuditEvent } from '@/hooks/useAuditLogs';
 
 interface AuthContextType {
   user: User | null;
@@ -43,10 +44,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Register session on sign in
+        // Register session and log audit event on sign in
         if (event === 'SIGNED_IN' && session?.access_token) {
           setTimeout(() => {
             registerSession(session.access_token);
+            logAuditEvent(session.user.id, 'user_login', 'auth', session.user.id);
+          }, 0);
+        }
+        
+        // Log audit event on sign out
+        if (event === 'SIGNED_OUT' && user) {
+          setTimeout(() => {
+            logAuditEvent(user.id, 'user_logout', 'auth', user.id);
           }, 0);
         }
       }
