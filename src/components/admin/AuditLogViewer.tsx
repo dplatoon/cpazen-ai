@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuditLogs, type AuditLog } from '@/hooks/useAuditLogs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -38,9 +38,51 @@ import {
   ChevronLeft,
   ChevronRight,
   RefreshCw,
-  Filter
+  Filter,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+// Critical actions that trigger real-time alerts
+const CRITICAL_ACTIONS = [
+  'user_role_changed',
+  'user_status_changed',
+  'offer_created',
+  'offer_deleted',
+  '2fa_disabled',
+  'secret_key_rotated',
+];
+
+function exportToCSV(logs: AuditLog[]) {
+  const headers = ['Timestamp', 'User Email', 'Action', 'Entity Type', 'Entity ID', 'IP Address', 'User Agent', 'Details'];
+  const rows = logs.map(log => [
+    format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss'),
+    log.user_email || '',
+    log.action,
+    log.entity_type,
+    log.entity_id || '',
+    log.ip_address || '',
+    log.user_agent || '',
+    JSON.stringify(log.details || {}),
+  ]);
+  
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+  ].join('\n');
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `audit-logs-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 const ACTION_TYPES = [
   { value: 'login', label: 'Login Attempts', icon: LogIn },
@@ -154,6 +196,35 @@ export function AuditLogViewer() {
     !searchEmail || log.user_email?.toLowerCase().includes(searchEmail.toLowerCase())
   );
 
+  // Real-time alerts for critical admin actions
+  useEffect(() => {
+    const channel = supabase
+      .channel('audit-logs-alerts')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'audit_logs',
+        },
+        (payload) => {
+          const newLog = payload.new as { action: string; user_email?: string; entity_type: string };
+          if (CRITICAL_ACTIONS.includes(newLog.action)) {
+            toast.warning(`Security Alert: ${newLog.action.replace(/_/g, ' ')}`, {
+              description: `By ${newLog.user_email || 'Unknown'} on ${newLog.entity_type}`,
+              duration: 10000,
+            });
+            refetch();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
+
   if (isLoading) {
     return (
       <Card>
@@ -174,6 +245,15 @@ export function AuditLogViewer() {
     );
   }
 
+  const handleExportCSV = () => {
+    if (filteredLogs && filteredLogs.length > 0) {
+      exportToCSV(filteredLogs);
+      toast.success('Audit logs exported successfully');
+    } else {
+      toast.error('No logs to export');
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -182,15 +262,26 @@ export function AuditLogViewer() {
             <Shield className="h-5 w-5" />
             Security Audit Logs
           </CardTitle>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => refetch()}
-            disabled={isRefetching}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleExportCSV}
+              disabled={!filteredLogs || filteredLogs.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => refetch()}
+              disabled={isRefetching}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
