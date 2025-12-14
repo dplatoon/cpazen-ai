@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Json } from '@/integrations/supabase/types';
+import { logAuditEvent } from '@/hooks/useAuditLogs';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface ManagedUser {
   user_id: string;
@@ -36,6 +38,7 @@ export function useAllUsers() {
 
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
@@ -46,9 +49,16 @@ export function useUpdateUserRole() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       toast.success('User role updated successfully');
+      
+      // Log audit event
+      if (user) {
+        logAuditEvent(user.id, 'user_role_changed', 'user', variables.userId, {
+          new_role: variables.role,
+        });
+      }
     },
     onError: (error: Error) => {
       toast.error(`Failed to update role: ${error.message}`);
@@ -58,6 +68,7 @@ export function useUpdateUserRole() {
 
 export function useUpdateUserStatus() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ userId, status }: { userId: string; status: string }) => {
@@ -68,9 +79,16 @@ export function useUpdateUserStatus() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       toast.success('User status updated successfully');
+      
+      // Log audit event
+      if (user) {
+        logAuditEvent(user.id, 'user_status_changed', 'user', variables.userId, {
+          new_status: variables.status,
+        });
+      }
     },
     onError: (error: Error) => {
       toast.error(`Failed to update status: ${error.message}`);
