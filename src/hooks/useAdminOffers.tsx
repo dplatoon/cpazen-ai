@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from './useUserRole';
+import { logAuditEvent } from '@/hooks/useAuditLogs';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface AdminOffer {
   id: string;
@@ -39,6 +41,7 @@ export function useAdminOffers() {
 
 export function useAdminCreateOffer() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (offerData: {
@@ -67,14 +70,23 @@ export function useAdminCreateOffer() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (offerId, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-offers'] });
+      
+      // Log audit event
+      if (user) {
+        logAuditEvent(user.id, 'offer_created', 'offer', offerId as string, {
+          name: variables.name,
+          payout: variables.payout,
+        });
+      }
     },
   });
 }
 
 export function useAdminUpdateOffer() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (offerData: {
@@ -103,14 +115,22 @@ export function useAdminUpdateOffer() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-offers'] });
+      
+      // Log audit event
+      if (user) {
+        logAuditEvent(user.id, 'offer_updated', 'offer', variables.id, {
+          updated_fields: Object.keys(variables).filter(k => k !== 'id'),
+        });
+      }
     },
   });
 }
 
 export function useAdminDeleteOffer() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (offerId: string) => {
@@ -121,8 +141,13 @@ export function useAdminDeleteOffer() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, offerId) => {
       queryClient.invalidateQueries({ queryKey: ['admin-offers'] });
+      
+      // Log audit event
+      if (user) {
+        logAuditEvent(user.id, 'offer_deleted', 'offer', offerId);
+      }
     },
   });
 }
