@@ -206,6 +206,25 @@ serve(async (req) => {
 
     // Build redirect URL with click_id macro replacement
     let redirectUrl = campaign.offers.offer_url;
+    
+    // SECURITY: Validate URL protocol to prevent XSS via javascript:, data:, etc.
+    const isValidProtocol = (url: string): boolean => {
+      try {
+        const parsed = new URL(url);
+        return ['http:', 'https:'].includes(parsed.protocol);
+      } catch {
+        return false;
+      }
+    };
+    
+    if (!isValidProtocol(redirectUrl)) {
+      console.error('[INTERNAL] Invalid redirect URL protocol detected');
+      return new Response(JSON.stringify({ error: 'Invalid redirect configuration' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
     if (clickId) {
       redirectUrl = redirectUrl.replace('{click_id}', clickId);
       redirectUrl = redirectUrl.replace('{clickid}', clickId);
@@ -221,16 +240,28 @@ serve(async (req) => {
 
     // Perform redirect based on campaign settings
     if (campaign.redirect_mode === 'meta') {
+      // SECURITY: HTML-encode the URL to prevent XSS injection
+      const escapeHtml = (str: string): string => {
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      };
+      
+      const safeRedirectUrl = escapeHtml(redirectUrl);
+      
       const html = `
         <!DOCTYPE html>
         <html>
         <head>
-          <meta http-equiv="refresh" content="0;url=${redirectUrl}">
+          <meta http-equiv="refresh" content="0;url=${safeRedirectUrl}">
           <title>Redirecting...</title>
         </head>
         <body>
           <p>Redirecting...</p>
-          <script>window.location.href="${redirectUrl}";</script>
+          <script>window.location.href="${safeRedirectUrl}";</script>
         </body>
         </html>
       `;
