@@ -1156,6 +1156,15 @@ export type Database = {
         Args: { click_id_param: string }
         Returns: string
       }
+      get_2fa_status_secure: {
+        Args: never
+        Returns: {
+          created_at: string
+          has_backup_codes: boolean
+          is_enabled: boolean
+          updated_at: string
+        }[]
+      }
       get_all_offers_admin: {
         Args: never
         Returns: {
