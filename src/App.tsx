@@ -10,6 +10,7 @@ import { ModernLayout } from "./components/layout/ModernLayout";
 
 // Lazy load pages for better performance
 const Index = lazy(() => import("./pages/Index"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const CampaignsPage = lazy(() => import("./pages/CampaignsPage"));
 const CampaignDetailPage = lazy(() => import("./pages/CampaignDetailPage"));
 const OffersPage = lazy(() => import("./pages/OffersPage"));
@@ -51,7 +52,8 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
-              <Route path="/" element={<ModernLayout><Index /></ModernLayout>} />
+              <Route path="/" element={<Index />} />
+              <Route path="/dashboard" element={<ModernLayout><DashboardPage /></ModernLayout>} />
               <Route path="/campaigns" element={<ModernLayout><CampaignsPage /></ModernLayout>} />
               <Route path="/campaigns/:id" element={<ModernLayout><CampaignDetailPage /></ModernLayout>} />
               <Route path="/offers" element={<ModernLayout><OffersPage /></ModernLayout>} />
