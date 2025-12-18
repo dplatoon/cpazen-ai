@@ -10,12 +10,15 @@ import { Search, DollarSign, Globe, TrendingUp, MousePointer, ArrowUpRight, Pack
 import { Skeleton } from '@/components/ui/skeleton';
 import { NetworkBadge } from '@/components/offers/NetworkBadge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CreateCampaignDialog } from '@/components/campaigns/CreateCampaignDialog';
 
 export default function AffiliateDashboard() {
   const { data: globalOffers, isLoading: globalLoading } = useGlobalOffers();
   const { data: myOffers, isLoading: myOffersLoading } = useOffers();
   const { data: metrics, isLoading: metricsLoading } = useCampaignMetrics();
   const [searchTerm, setSearchTerm] = useState('');
+  const [campaignDialogOpen, setCampaignDialogOpen] = useState(false);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | undefined>(undefined);
 
   // Aggregate metrics across all campaigns
   const aggregatedMetrics = metrics ? Object.values(metrics).reduce(
@@ -47,6 +50,18 @@ export default function AffiliateDashboard() {
         return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Stopped</Badge>;
       default:
         return <Badge>{status}</Badge>;
+    }
+  };
+
+  const handleCreateCampaign = (offerId: string) => {
+    setSelectedOfferId(offerId);
+    setCampaignDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setCampaignDialogOpen(open);
+    if (!open) {
+      setSelectedOfferId(undefined);
     }
   };
 
@@ -223,7 +238,10 @@ export default function AffiliateDashboard() {
                       </div>
                     )}
 
-                    <Button className="w-full">
+                    <Button 
+                      className="w-full"
+                      onClick={() => handleCreateCampaign(offer.id)}
+                    >
                       Create Campaign
                     </Button>
                   </CardContent>
@@ -306,7 +324,10 @@ export default function AffiliateDashboard() {
                       </div>
                     )}
 
-                    <Button className="w-full">
+                    <Button 
+                      className="w-full"
+                      onClick={() => handleCreateCampaign(offer.id)}
+                    >
                       Create Campaign
                     </Button>
                   </CardContent>
@@ -316,6 +337,13 @@ export default function AffiliateDashboard() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Create Campaign Dialog */}
+      <CreateCampaignDialog
+        open={campaignDialogOpen}
+        onOpenChange={handleDialogClose}
+        defaultOfferId={selectedOfferId}
+      />
     </div>
   );
 }

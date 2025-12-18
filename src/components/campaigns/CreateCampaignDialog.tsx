@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Copy, ExternalLink, Zap } from "lucide-react";
 import { useOffers } from "@/hooks/useRealData";
+import { useGlobalOffers } from "@/hooks/useGlobalOffers";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -52,29 +53,52 @@ type FormValues = z.infer<typeof formSchema>;
 interface CreateCampaignDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultOfferId?: string;
 }
 
 export function CreateCampaignDialog({
   open,
   onOpenChange,
+  defaultOfferId,
 }: CreateCampaignDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: offers = [] } = useOffers();
+  const { data: userOffers = [] } = useOffers();
+  const { data: globalOffers = [] } = useGlobalOffers();
   const [createdCampaign, setCreatedCampaign] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Combine user offers and global offers, removing duplicates
+  const allOffers = [...userOffers, ...globalOffers].reduce((acc, offer) => {
+    if (!acc.find((o: any) => o.id === offer.id)) {
+      acc.push(offer);
+    }
+    return acc;
+  }, [] as any[]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      offer_id: "",
+      offer_id: defaultOfferId || "",
       redirect_mode: "302",
       cost_model: "CPC",
       tracking_domain: "cpazen.com",
     },
   });
+
+  // Update form when defaultOfferId changes
+  useEffect(() => {
+    if (defaultOfferId && open) {
+      form.setValue("offer_id", defaultOfferId);
+      // Auto-fill campaign name based on offer
+      const offer = allOffers.find(o => o.id === defaultOfferId);
+      if (offer && !form.getValues("name")) {
+        form.setValue("name", `${offer.name} Campaign`);
+      }
+    }
+  }, [defaultOfferId, open, allOffers]);
 
   const handleSubmit = async (values: FormValues) => {
     if (!user) return;
@@ -135,8 +159,7 @@ export function CreateCampaignDialog({
   };
 
   const generateTrackingLink = (campaignId: string) => {
-    const domain = form.getValues("tracking_domain") || "cpazen.com";
-    return `https://pxdypbnzlxxvewtwkohn.supabase.co/functions/v1/track-click/${campaignId}?sub={sub_id}`;
+    return `https://rdajybqalmsdycxsruon.supabase.co/functions/v1/track-click/${campaignId}?sub={sub_id}`;
   };
 
   const copyToClipboard = (text: string) => {
@@ -147,7 +170,7 @@ export function CreateCampaignDialog({
     });
   };
 
-  const selectedOffer = offers.find(offer => offer.id === form.watch("offer_id"));
+  const selectedOffer = allOffers.find(offer => offer.id === form.watch("offer_id"));
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -192,14 +215,14 @@ export function CreateCampaignDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Offer</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select an offer..." />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {offers.map((offer) => (
+                          {allOffers.map((offer) => (
                             <SelectItem key={offer.id} value={offer.id}>
                               <div className="flex items-center justify-between w-full">
                                 <div>
