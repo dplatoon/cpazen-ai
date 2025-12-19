@@ -616,6 +616,33 @@ export type Database = {
           },
         ]
       }
+      login_rate_limits: {
+        Row: {
+          attempt_count: number
+          first_attempt_at: string
+          id: string
+          ip_address: string
+          last_attempt_at: string
+          locked_until: string | null
+        }
+        Insert: {
+          attempt_count?: number
+          first_attempt_at?: string
+          id?: string
+          ip_address: string
+          last_attempt_at?: string
+          locked_until?: string | null
+        }
+        Update: {
+          attempt_count?: number
+          first_attempt_at?: string
+          id?: string
+          ip_address?: string
+          last_attempt_at?: string
+          locked_until?: string | null
+        }
+        Relationships: []
+      }
       notification_logs: {
         Row: {
           email_to: string
@@ -1150,6 +1177,8 @@ export type Database = {
         Returns: boolean
       }
       check_2fa_status: { Args: { p_email: string }; Returns: boolean }
+      check_login_rate_limit: { Args: { p_ip_address: string }; Returns: Json }
+      cleanup_old_login_rate_limits: { Args: never; Returns: undefined }
       cleanup_old_postback_rate_limits: { Args: never; Returns: undefined }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       generate_security_token_for_click: {
@@ -1340,6 +1369,10 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: string
+      }
+      reset_login_rate_limit: {
+        Args: { p_ip_address: string }
+        Returns: undefined
       }
       revoke_all_other_sessions: {
         Args: { current_token: string }

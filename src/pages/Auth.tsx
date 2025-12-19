@@ -10,6 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Footer } from '@/components/layout/Footer';
 import { TwoFactorVerify } from '@/components/auth/TwoFactorVerify';
+import { ArrowLeft, Mail, AlertTriangle, Clock } from 'lucide-react';
+
+type ViewMode = 'auth' | 'forgot-password' | 'email-sent';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
@@ -18,6 +21,8 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [requires2FA, setRequires2FA] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('auth');
+  const [rateLimitInfo, setRateLimitInfo] = useState<{ attemptsRemaining?: number; lockedUntil?: string } | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -46,12 +51,58 @@ export default function Auth() {
     }
   };
 
+  const checkRateLimit = async (): Promise<{ allowed: boolean; message?: string; attemptsRemaining?: number; lockedUntil?: string }> => {
+    try {
+      // Get client IP (will be captured server-side, use placeholder for now)
+      const clientIp = 'client-ip'; // Placeholder - rate limit will use actual IP from request
+      
+      const { data, error } = await supabase.rpc('check_login_rate_limit', { p_ip_address: clientIp });
+      
+      if (error) {
+        console.error('Rate limit check error:', error);
+        // Allow login if rate limit check fails (fail-open for better UX)
+        return { allowed: true };
+      }
+      
+      return data as { allowed: boolean; message?: string; attemptsRemaining?: number; lockedUntil?: string };
+    } catch (err) {
+      console.error('Rate limit check error:', err);
+      return { allowed: true };
+    }
+  };
+
+  const resetRateLimit = async () => {
+    try {
+      const clientIp = 'client-ip';
+      await supabase.rpc('reset_login_rate_limit', { p_ip_address: clientIp });
+    } catch (err) {
+      console.error('Rate limit reset error:', err);
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
+      // Check rate limit before attempting login
+      const rateLimit = await checkRateLimit();
+      
+      if (!rateLimit.allowed) {
+        setError(rateLimit.message || 'Too many failed attempts. Please try again later.');
+        if (rateLimit.lockedUntil) {
+          setRateLimitInfo({ lockedUntil: rateLimit.lockedUntil });
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Update rate limit info for UI
+      if (rateLimit.attemptsRemaining !== undefined && rateLimit.attemptsRemaining < 3) {
+        setRateLimitInfo({ attemptsRemaining: rateLimit.attemptsRemaining });
+      }
+
       // First check if user has 2FA enabled
       const has2FA = await check2FAStatus(email);
       
@@ -76,6 +127,9 @@ export default function Auth() {
           variant: "destructive",
         });
       } else {
+        // Reset rate limit on successful login
+        await resetRateLimit();
+        setRateLimitInfo(null);
         toast({
           title: "Welcome back!",
           description: "Successfully signed in to Cpazen.",
@@ -160,7 +214,45 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    if (!email) {
+      setError('Please enter your email address');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        setError(error.message);
+        toast({
+          title: "Password Reset Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setViewMode('email-sent');
+        toast({
+          title: "Check your email",
+          description: "We've sent you a password reset link.",
+        });
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handle2FASuccess = () => {
+    resetRateLimit();
     toast({
       title: "Welcome back!",
       description: "Successfully signed in to Cpazen.",
@@ -193,6 +285,126 @@ export default function Auth() {
               onSuccess={handle2FASuccess}
               onBack={handle2FABack}
             />
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show email sent confirmation
+  if (viewMode === 'email-sent') {
+    return (
+      <div className="min-h-screen bg-gradient-background flex flex-col">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <Card className="bg-gradient-card border-card-border">
+              <CardHeader>
+                <div className="flex justify-center mb-4">
+                  <Mail className="w-16 h-16 text-brand-teal" />
+                </div>
+                <CardTitle className="text-xl text-center text-foreground">Check Your Email</CardTitle>
+                <CardDescription className="text-center text-foreground-muted">
+                  We've sent a password reset link to <strong>{email}</strong>. 
+                  Click the link in the email to reset your password.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert className="border-muted bg-muted/50">
+                  <AlertDescription className="text-sm text-foreground-muted">
+                    Didn't receive the email? Check your spam folder or try again in a few minutes.
+                  </AlertDescription>
+                </Alert>
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setViewMode('forgot-password')}
+                >
+                  Try Again
+                </Button>
+                <Button 
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    setViewMode('auth');
+                    setEmail('');
+                  }}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Sign In
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show forgot password form
+  if (viewMode === 'forgot-password') {
+    return (
+      <div className="min-h-screen bg-gradient-background flex flex-col">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-foreground mb-2">Reset Your Password</h1>
+              <p className="text-foreground-muted">
+                Enter your email and we'll send you a reset link
+              </p>
+            </div>
+
+            <Card className="bg-gradient-card border-card-border">
+              <CardHeader>
+                <CardTitle className="text-xl text-center text-foreground">Forgot Password</CardTitle>
+                <CardDescription className="text-center text-foreground-muted">
+                  We'll send you a secure link to reset your password
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email Address</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {error && (
+                    <Alert className="border-destructive/20 bg-destructive/10">
+                      <AlertDescription className="text-destructive">{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-brand hover:opacity-90 text-white"
+                    disabled={loading}
+                  >
+                    {loading ? 'Sending...' : 'Send Reset Link'}
+                  </Button>
+
+                  <Button 
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setViewMode('auth');
+                      setError('');
+                    }}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Sign In
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           </div>
         </div>
         <Footer />
@@ -241,7 +453,19 @@ export default function Auth() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="signin-password">Password</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="signin-password">Password</Label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setViewMode('forgot-password');
+                            setError('');
+                          }}
+                          className="text-sm text-brand-teal hover:text-brand-teal/80 transition-colors"
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
                       <Input
                         id="signin-password"
                         type="password"
@@ -251,6 +475,26 @@ export default function Auth() {
                         required
                       />
                     </div>
+
+                    {/* Rate limit warning */}
+                    {rateLimitInfo?.attemptsRemaining !== undefined && rateLimitInfo.attemptsRemaining < 3 && (
+                      <Alert className="border-yellow-500/20 bg-yellow-500/10">
+                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                        <AlertDescription className="text-yellow-600 dark:text-yellow-400">
+                          {rateLimitInfo.attemptsRemaining} login attempts remaining before temporary lockout.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {/* Lockout message */}
+                    {rateLimitInfo?.lockedUntil && (
+                      <Alert className="border-destructive/20 bg-destructive/10">
+                        <Clock className="h-4 w-4 text-destructive" />
+                        <AlertDescription className="text-destructive">
+                          Too many failed attempts. Please try again later.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     
                     {error && (
                       <Alert className="border-destructive/20 bg-destructive/10">
@@ -261,7 +505,7 @@ export default function Auth() {
                     <Button 
                       type="submit" 
                       className="w-full bg-gradient-brand hover:opacity-90 text-white"
-                      disabled={loading}
+                      disabled={loading || !!rateLimitInfo?.lockedUntil}
                     >
                       {loading ? 'Signing in...' : 'Sign In'}
                     </Button>
