@@ -226,26 +226,25 @@ export default function Auth() {
     }
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      // Email enumeration protection: Always show success message regardless of result
+      // This prevents attackers from discovering valid email addresses
+      await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
-      if (error) {
-        setError(error.message);
-        toast({
-          title: "Password Reset Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        setViewMode('email-sent');
-        toast({
-          title: "Check your email",
-          description: "We've sent you a password reset link.",
-        });
-      }
+      // Always show success - don't reveal if email exists or not
+      setViewMode('email-sent');
+      toast({
+        title: "Check your email",
+        description: "If an account exists with this email, you'll receive a reset link.",
+      });
     } catch (err) {
-      setError('An unexpected error occurred');
+      // Even on error, show the same message to prevent enumeration
+      setViewMode('email-sent');
+      toast({
+        title: "Check your email",
+        description: "If an account exists with this email, you'll receive a reset link.",
+      });
     } finally {
       setLoading(false);
     }
