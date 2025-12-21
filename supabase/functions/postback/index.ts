@@ -7,13 +7,57 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Network-specific parameter mappings
+const NETWORK_PARAM_MAPS: Record<string, {
+  clickId: string[];
+  payout: string[];
+  status: string[];
+  subId?: string[];
+}> = {
+  maxbounty: {
+    clickId: ['s2', 'cid', 'subid2'],
+    payout: ['rate', 'payout', 'amount'],
+    status: ['status'],
+    subId: ['s1', 'subid1'],
+  },
+  everflow: {
+    clickId: ['transaction_id', 'tid', 'click_id'],
+    payout: ['payout', 'amount', 'revenue'],
+    status: ['status', 'event'],
+    subId: ['sub1', 'aff_sub'],
+  },
+  shareasale: {
+    clickId: ['afftrack', 'tracking', 'clickid'],
+    payout: ['amount', 'sale_amount', 'payout'],
+    status: ['newStatus', 'status'],
+    subId: ['subid'],
+  },
+  cj: {
+    clickId: ['SID', 'sid', 'click_id'],
+    payout: ['commissionAmount', 'amount', 'payout'],
+    status: ['correctionReason', 'status'],
+    subId: ['PID', 'AID'],
+  },
+  clickbank: {
+    clickId: ['tid', 'ctransaction', 'click_id'],
+    payout: ['ctransreceipt', 'amount', 'payout'],
+    status: ['ctransaction', 'status'],
+    subId: ['hop'],
+  },
+  generic: {
+    clickId: ['click_id', 'cid', 'clickid', 'transaction_id', 'tid'],
+    payout: ['payout', 'amount', 'revenue', 'commission'],
+    status: ['status', 'event', 'action'],
+    subId: ['sub_id', 'subid', 'sub1'],
+  },
+};
+
 // Rate limiting: max 3 postbacks per click_id per hour
 const RATE_LIMIT_MAX_REQUESTS = 3;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 async function checkRateLimit(supabase: any, clickId: string): Promise<{ allowed: boolean; remaining: number }> {
   try {
-    // Try to get existing rate limit record
     const { data: existing, error: fetchError } = await supabase
       .from('postback_rate_limits')
       .select('*')
@@ -23,14 +67,11 @@ async function checkRateLimit(supabase: any, clickId: string): Promise<{ allowed
     const now = new Date();
 
     if (fetchError && fetchError.code !== 'PGRST116') {
-      // PGRST116 = not found, which is fine
       console.error('[INTERNAL] Rate limit fetch error:', fetchError);
-      // Allow on error to not block legitimate traffic
       return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS };
     }
 
     if (!existing) {
-      // First request for this click_id
       const { error: insertError } = await supabase
         .from('postback_rate_limits')
         .insert({
@@ -46,12 +87,10 @@ async function checkRateLimit(supabase: any, clickId: string): Promise<{ allowed
       return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
     }
 
-    // Check if window has expired
     const firstRequestAt = new Date(existing.first_request_at);
     const windowExpired = (now.getTime() - firstRequestAt.getTime()) > RATE_LIMIT_WINDOW_MS;
 
     if (windowExpired) {
-      // Reset the window
       const { error: updateError } = await supabase
         .from('postback_rate_limits')
         .update({
@@ -67,12 +106,10 @@ async function checkRateLimit(supabase: any, clickId: string): Promise<{ allowed
       return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
     }
 
-    // Check if within limit
     if (existing.request_count >= RATE_LIMIT_MAX_REQUESTS) {
       return { allowed: false, remaining: 0 };
     }
 
-    // Increment counter
     const { error: incrementError } = await supabase
       .from('postback_rate_limits')
       .update({
@@ -88,9 +125,17 @@ async function checkRateLimit(supabase: any, clickId: string): Promise<{ allowed
     return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - existing.request_count - 1 };
   } catch (error) {
     console.error('[INTERNAL] Rate limit check failed:', error);
-    // Allow on error to not block legitimate traffic
     return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS };
   }
+}
+
+// Extract parameter value by trying multiple possible names
+function extractParam(params: Record<string, string>, possibleNames: string[]): string | undefined {
+  for (const name of possibleNames) {
+    const value = params[name] || params[name.toLowerCase()] || params[name.toUpperCase()];
+    if (value) return value;
+  }
+  return undefined;
 }
 
 serve(async (req) => {
@@ -99,87 +144,38 @@ serve(async (req) => {
   }
 
   try {
-    let click_id: string;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    let click_id: string | undefined;
     let payout: number;
     let status: string;
     let security_token: string | undefined;
-    let rawData: any = {};
+    let rawData: Record<string, string> = {};
+    let networkAccount: any = null;
+    let postbackKey: string | undefined;
 
-    // Handle both GET (MaxBounty format) and POST (JSON format)
+    // Parse request parameters
+    const url = new URL(req.url);
+    
     if (req.method === 'GET') {
-      // MaxBounty and similar networks use GET with query params
-      const url = new URL(req.url);
-      const cid = url.searchParams.get('cid'); // MaxBounty uses 'cid'
-      const payoutParam = url.searchParams.get('payout');
-      const statusParam = url.searchParams.get('status');
-      const token = url.searchParams.get('security_token');
-
-      // Validate GET parameters
-      const getSchema = z.object({
-        cid: z.string().uuid('Invalid click_id format'),
-        payout: z.string().transform(val => parseFloat(val)).pipe(
-          z.number().min(0, 'Payout must be non-negative').max(10000, 'Payout exceeds maximum')
-        ),
-        status: z.enum(['pending', 'approved', 'rejected', 'cancelled']).default('approved'),
-        security_token: z.string().optional()
-      });
-
-      const validationResult = getSchema.safeParse({
-        cid,
-        payout: payoutParam,
-        status: statusParam || 'approved',
-        security_token: token
-      });
-
-      if (!validationResult.success) {
-        return new Response(JSON.stringify({ error: 'Invalid request parameters' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      click_id = validationResult.data.cid;
-      payout = validationResult.data.payout;
-      status = validationResult.data.status;
-      security_token = validationResult.data.security_token;
-
-      // Store all query params as raw data
       url.searchParams.forEach((value, key) => {
         rawData[key] = value;
       });
-
     } else if (req.method === 'POST') {
-      // Traditional JSON POST format
-      const requestBody = await req.json();
-      
-      const postbackSchema = z.object({
-        click_id: z.string().uuid('Invalid click_id format'),
-        payout: z.number().min(0, 'Payout must be non-negative').max(10000, 'Payout exceeds maximum'),
-        status: z.enum(['pending', 'approved', 'rejected', 'cancelled']).default('pending'),
-        security_token: z.string().optional()
-      });
-
-      const validationResult = postbackSchema.safeParse({
-        click_id: requestBody.click_id,
-        payout: parseFloat(requestBody.payout),
-        status: requestBody.status || 'pending',
-        security_token: requestBody.security_token
-      });
-
-      if (!validationResult.success) {
-        return new Response(JSON.stringify({ error: 'Invalid request parameters' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      const contentType = req.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const body = await req.json();
+        rawData = Object.fromEntries(
+          Object.entries(body).map(([k, v]) => [k, String(v)])
+        );
+      } else if (contentType.includes('application/x-www-form-urlencoded')) {
+        const formData = await req.formData();
+        formData.forEach((value, key) => {
+          rawData[key] = String(value);
         });
       }
-
-      click_id = validationResult.data.click_id;
-      payout = validationResult.data.payout;
-      status = validationResult.data.status;
-      security_token = validationResult.data.security_token;
-
-      const { click_id: _, payout: __, status: ___, security_token: ____, ...rest } = requestBody;
-      rawData = rest;
     } else {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
         status: 405,
@@ -187,18 +183,109 @@ serve(async (req) => {
       });
     }
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('Postback received:', { method: req.method, params: Object.keys(rawData) });
 
-    // Rate limit check per click_id to prevent bulk fraud
+    // Check for postback key routing (new method)
+    postbackKey = rawData.key || rawData.postback_key || rawData.pk;
+    
+    if (postbackKey) {
+      // Route via postback key to get network account config
+      const { data: accountData, error: accountError } = await supabase
+        .rpc('get_network_account_by_postback_key', { p_key: postbackKey });
+
+      if (accountError) {
+        console.error('[INTERNAL] Network account lookup error:', accountError);
+      } else if (accountData && accountData.length > 0) {
+        networkAccount = accountData[0];
+        console.log('Network account found:', { 
+          network: networkAccount.network_type,
+          name: networkAccount.name 
+        });
+      }
+    }
+
+    // Determine which parameter map to use
+    const networkType = networkAccount?.network_type || 'generic';
+    const paramMap = NETWORK_PARAM_MAPS[networkType] || NETWORK_PARAM_MAPS.generic;
+    
+    // Use network config overrides if available
+    const configJson = networkAccount?.config_json || {};
+    const customClickIdParam = configJson.clickIdParam;
+    const customPayoutParam = configJson.payoutParam;
+    const customStatusParam = configJson.statusParam;
+
+    // Extract parameters using network-specific or generic mappings
+    const clickIdParams = customClickIdParam 
+      ? [customClickIdParam, ...paramMap.clickId] 
+      : paramMap.clickId;
+    const payoutParams = customPayoutParam 
+      ? [customPayoutParam, ...paramMap.payout] 
+      : paramMap.payout;
+    const statusParams = customStatusParam 
+      ? [customStatusParam, ...paramMap.status] 
+      : paramMap.status;
+
+    click_id = extractParam(rawData, clickIdParams);
+    const payoutStr = extractParam(rawData, payoutParams);
+    const statusStr = extractParam(rawData, statusParams);
+    security_token = rawData.security_token || rawData.token;
+
+    // Validate click_id
+    if (!click_id) {
+      console.error('Missing click_id. Tried params:', clickIdParams);
+      return new Response(JSON.stringify({ 
+        error: 'Missing click_id',
+        hint: `Expected one of: ${clickIdParams.join(', ')}`
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(click_id)) {
+      console.error('Invalid click_id format:', click_id);
+      return new Response(JSON.stringify({ error: 'Invalid click_id format' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Parse payout
+    payout = payoutStr ? parseFloat(payoutStr) : 0;
+    if (isNaN(payout) || payout < 0) {
+      payout = 0;
+    }
+    if (payout > 10000) {
+      console.warn('Payout exceeds maximum, capping at 10000');
+      payout = 10000;
+    }
+
+    // Normalize status
+    const statusMap: Record<string, string> = {
+      'approved': 'approved',
+      'confirmed': 'approved',
+      'success': 'approved',
+      'sale': 'approved',
+      'converted': 'approved',
+      'pending': 'pending',
+      'rejected': 'rejected',
+      'declined': 'rejected',
+      'reversed': 'rejected',
+      'cancelled': 'cancelled',
+      'canceled': 'cancelled',
+      'chargeback': 'cancelled',
+    };
+    status = statusMap[statusStr?.toLowerCase() || ''] || 'approved';
+
+    // Rate limit check
     const rateLimit = await checkRateLimit(supabase, click_id);
     if (!rateLimit.allowed) {
       console.warn(`Rate limit exceeded for click_id: ${click_id}`);
       return new Response(JSON.stringify({ 
         error: 'Rate limit exceeded',
-        message: 'Too many postback requests for this click. Please try again later.'
+        message: 'Too many postback requests for this click.'
       }), {
         status: 429,
         headers: { 
@@ -210,7 +297,7 @@ serve(async (req) => {
       });
     }
 
-    // Get click data to verify it exists
+    // Get click data
     const { data: clickData, error: clickError } = await supabase
       .from('clicks')
       .select('click_id, campaign_id, user_id')
@@ -225,7 +312,16 @@ serve(async (req) => {
       });
     }
 
-    // Verify security token if provided (optional for networks like MaxBounty)
+    // Validate postback key belongs to same user (if using key routing)
+    if (networkAccount && networkAccount.user_id !== clickData.user_id) {
+      console.warn('Postback key user mismatch');
+      return new Response(JSON.stringify({ error: 'Invalid postback key' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Verify security token if provided
     if (security_token) {
       const { data: isValid, error: validationError } = await supabase
         .rpc('validate_postback_security_token', {
@@ -277,10 +373,11 @@ serve(async (req) => {
       click_id,
       payout,
       status,
+      network: networkType,
       rate_limit_remaining: rateLimit.remaining
     });
 
-    // Trigger webhooks for conversion event (fire and forget)
+    // Trigger webhooks
     fetch(`${supabaseUrl}/functions/v1/webhook-handler`, {
       method: 'POST',
       headers: {
@@ -296,6 +393,7 @@ serve(async (req) => {
           campaign_id: clickData.campaign_id,
           payout,
           status,
+          network_type: networkType,
           timestamp: new Date().toISOString(),
         },
       }),
