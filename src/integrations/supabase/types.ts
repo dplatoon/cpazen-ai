@@ -643,6 +643,45 @@ export type Database = {
         }
         Relationships: []
       }
+      network_accounts: {
+        Row: {
+          config_json: Json | null
+          created_at: string | null
+          external_id: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          network_type: string
+          postback_secret: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          config_json?: Json | null
+          created_at?: string | null
+          external_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          network_type: string
+          postback_secret?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          config_json?: Json | null
+          created_at?: string | null
+          external_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          network_type?: string
+          postback_secret?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_logs: {
         Row: {
           email_to: string
@@ -723,6 +762,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      postback_keys: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          key: string
+          network_account_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key?: string
+          network_account_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key?: string
+          network_account_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "postback_keys_network_account_id_fkey"
+            columns: ["network_account_id"]
+            isOneToOne: false
+            referencedRelation: "network_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       postback_rate_limits: {
         Row: {
@@ -864,6 +938,42 @@ export type Database = {
           rotated_at?: string
           user_agent?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      tracking_domains: {
+        Row: {
+          created_at: string | null
+          dns_record_type: string | null
+          domain: string
+          id: string
+          updated_at: string | null
+          user_id: string
+          verification_status: string
+          verification_token: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dns_record_type?: string | null
+          domain: string
+          id?: string
+          updated_at?: string | null
+          user_id: string
+          verification_status?: string
+          verification_token?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dns_record_type?: string | null
+          domain?: string
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+          verification_status?: string
+          verification_token?: string
+          verified_at?: string | null
         }
         Relationships: []
       }
@@ -1304,6 +1414,18 @@ export type Database = {
         Returns: {
           has_backup_codes: boolean
           is_enabled: boolean
+        }[]
+      }
+      get_network_account_by_postback_key: {
+        Args: { p_key: string }
+        Returns: {
+          config_json: Json
+          external_id: string
+          id: string
+          name: string
+          network_type: string
+          postback_secret: string
+          user_id: string
         }[]
       }
       get_user_activity_admin: {

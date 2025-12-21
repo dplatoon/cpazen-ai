@@ -4,6 +4,8 @@ import { IntegrationDocs } from "@/components/integration/IntegrationDocs";
 import { WebhookManager } from "@/components/integration/WebhookManager";
 import { WebhookTester } from "@/components/integration/WebhookTester";
 import { FeatureAudit } from "@/components/audit/FeatureAudit";
+import { NetworkAccountManager } from "@/components/networks/NetworkAccountManager";
+import { LinkBuilderWizard } from "@/components/networks/LinkBuilderWizard";
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,18 +32,28 @@ const IntegrationPage = () => {
   }
 
   if (!user) {
-    return null; // Will redirect to auth
+    return null;
   }
 
   return (
     <AppLayout>
-      <Tabs defaultValue="integration" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="integration">Integration Guide</TabsTrigger>
+      <Tabs defaultValue="networks" className="w-full">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="networks">Networks</TabsTrigger>
+          <TabsTrigger value="links">Link Builder</TabsTrigger>
+          <TabsTrigger value="integration">Docs</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-          <TabsTrigger value="testing">Test Webhooks</TabsTrigger>
-          <TabsTrigger value="audit">Feature Audit</TabsTrigger>
+          <TabsTrigger value="testing">Test</TabsTrigger>
+          <TabsTrigger value="audit">Audit</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="networks" className="space-y-6">
+          <NetworkAccountManager />
+        </TabsContent>
+
+        <TabsContent value="links" className="space-y-6">
+          <LinkBuilderWizard />
+        </TabsContent>
         
         <TabsContent value="integration" className="space-y-6">
           <IntegrationDocs />
