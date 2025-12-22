@@ -138,6 +138,22 @@ function extractParam(params: Record<string, string>, possibleNames: string[]): 
   return undefined;
 }
 
+// Helper function to trigger webhooks (fire-and-forget)
+function triggerWebhook(supabaseUrl: string, supabaseKey: string, userId: string, eventType: string, data: any): void {
+  fetch(`${supabaseUrl}/functions/v1/webhook-handler`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${supabaseKey}`,
+    },
+    body: JSON.stringify({
+      userId,
+      eventType,
+      data,
+    }),
+  }).catch(err => console.error(`Error triggering ${eventType} webhook:`, err));
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -315,6 +331,16 @@ serve(async (req) => {
     // Validate postback key belongs to same user (if using key routing)
     if (networkAccount && networkAccount.user_id !== clickData.user_id) {
       console.warn('Postback key user mismatch');
+      
+      // Trigger postback_failed webhook for the correct user
+      triggerWebhook(supabaseUrl, supabaseKey, clickData.user_id, 'postback_failed', {
+        click_id: click_id,
+        campaign_id: clickData.campaign_id,
+        error: 'Postback key user mismatch',
+        network_type: networkType,
+        timestamp: new Date().toISOString(),
+      });
+      
       return new Response(JSON.stringify({ error: 'Invalid postback key' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -331,6 +357,15 @@ serve(async (req) => {
       
       if (validationError) {
         console.error('[INTERNAL] Token validation error:', validationError);
+        
+        triggerWebhook(supabaseUrl, supabaseKey, clickData.user_id, 'postback_failed', {
+          click_id: click_id,
+          campaign_id: clickData.campaign_id,
+          error: 'Security token validation failed',
+          network_type: networkType,
+          timestamp: new Date().toISOString(),
+        });
+        
         return new Response(JSON.stringify({ error: 'Authentication failed' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -338,6 +373,14 @@ serve(async (req) => {
       }
       
       if (!isValid) {
+        triggerWebhook(supabaseUrl, supabaseKey, clickData.user_id, 'postback_failed', {
+          click_id: click_id,
+          campaign_id: clickData.campaign_id,
+          error: 'Invalid security token',
+          network_type: networkType,
+          timestamp: new Date().toISOString(),
+        });
+        
         return new Response(JSON.stringify({ error: 'Authentication failed' }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -363,6 +406,15 @@ serve(async (req) => {
 
     if (conversionError) {
       console.error('[INTERNAL] Conversion recording failed:', conversionError);
+      
+      triggerWebhook(supabaseUrl, supabaseKey, clickData.user_id, 'postback_failed', {
+        click_id: click_id,
+        campaign_id: clickData.campaign_id,
+        error: 'Failed to record conversion',
+        network_type: networkType,
+        timestamp: new Date().toISOString(),
+      });
+      
       return new Response(JSON.stringify({ error: 'Operation failed' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -377,27 +429,27 @@ serve(async (req) => {
       rate_limit_remaining: rateLimit.remaining
     });
 
-    // Trigger webhooks
-    fetch(`${supabaseUrl}/functions/v1/webhook-handler`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
-      },
-      body: JSON.stringify({
-        userId: clickData.user_id,
-        eventType: 'conversion',
-        data: {
-          conversion_id: conversion.id,
-          click_id: click_id,
-          campaign_id: clickData.campaign_id,
-          payout,
-          status,
-          network_type: networkType,
-          timestamp: new Date().toISOString(),
-        },
-      }),
-    }).catch(err => console.error('Error triggering webhook:', err));
+    // Trigger conversion webhook
+    triggerWebhook(supabaseUrl, supabaseKey, clickData.user_id, 'conversion', {
+      conversion_id: conversion.id,
+      click_id: click_id,
+      campaign_id: clickData.campaign_id,
+      payout,
+      status,
+      network_type: networkType,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Trigger postback_received webhook notification
+    triggerWebhook(supabaseUrl, supabaseKey, clickData.user_id, 'postback_received', {
+      click_id: click_id,
+      campaign_id: clickData.campaign_id,
+      payout,
+      status,
+      network_type: networkType,
+      raw_params: Object.keys(rawData),
+      timestamp: new Date().toISOString(),
+    });
 
     return new Response(JSON.stringify({ 
       success: true, 
