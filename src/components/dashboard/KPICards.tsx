@@ -1,8 +1,10 @@
 import { Card } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign, MousePointer, Target, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, MousePointer, Target, BarChart3, Radio } from "lucide-react";
 import { useDashboardStats } from "@/hooks/useRealData";
+import { useRealtimeStats } from "@/hooks/useRealtimeStats";
 import { cn } from "@/lib/utils";
 import { DashboardFiltersState } from "./DashboardFilters";
+import { Badge } from "@/components/ui/badge";
 
 interface KPICardsProps {
   filters?: DashboardFiltersState;
@@ -61,6 +63,7 @@ const KPICard = ({ title, value, change, icon: Icon, format = 'number' }: KPICar
 
 export const KPICards = ({ filters }: KPICardsProps) => {
   const { data: stats, isLoading } = useDashboardStats();
+  const { isConnected, lastClick, lastConversion } = useRealtimeStats();
 
   if (isLoading) {
     return (
@@ -77,7 +80,32 @@ export const KPICards = ({ filters }: KPICardsProps) => {
   if (!stats) return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+    <div className="space-y-4">
+      {/* Realtime indicator */}
+      <div className="flex items-center gap-2">
+        <Badge 
+          variant="outline" 
+          className={cn(
+            "flex items-center gap-1.5",
+            isConnected ? "border-green-500/50 text-green-400" : "border-foreground-muted/50 text-foreground-muted"
+          )}
+        >
+          <Radio className={cn("h-3 w-3", isConnected && "animate-pulse")} />
+          {isConnected ? "Live" : "Connecting..."}
+        </Badge>
+        {lastClick && (
+          <span className="text-xs text-foreground-muted">
+            Last click: {lastClick.toLocaleTimeString()}
+          </span>
+        )}
+        {lastConversion && (
+          <span className="text-xs text-foreground-muted">
+            Last conversion: {lastConversion.toLocaleTimeString()}
+          </span>
+        )}
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
       <KPICard
         title="Today's Clicks"
         value={stats.todayClicks}
@@ -120,6 +148,7 @@ export const KPICards = ({ filters }: KPICardsProps) => {
         icon={DollarSign}
         format="currency"
       />
+      </div>
     </div>
   );
 };

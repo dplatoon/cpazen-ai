@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { IntegrationDocs } from "@/components/integration/IntegrationDocs";
 import { WebhookManager } from "@/components/integration/WebhookManager";
 import { WebhookTester } from "@/components/integration/WebhookTester";
+import { WebhookDeliveryDashboard } from "@/components/integration/WebhookDeliveryDashboard";
 import { FeatureAudit } from "@/components/audit/FeatureAudit";
 import { NetworkAccountManager } from "@/components/networks/NetworkAccountManager";
 import { LinkBuilderWizard } from "@/components/networks/LinkBuilderWizard";
@@ -38,11 +39,12 @@ const IntegrationPage = () => {
   return (
     <AppLayout>
       <Tabs defaultValue="networks" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="networks">Networks</TabsTrigger>
           <TabsTrigger value="links">Link Builder</TabsTrigger>
           <TabsTrigger value="integration">Docs</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+          <TabsTrigger value="deliveries">Deliveries</TabsTrigger>
           <TabsTrigger value="testing">Test</TabsTrigger>
           <TabsTrigger value="audit">Audit</TabsTrigger>
         </TabsList>
@@ -61,6 +63,10 @@ const IntegrationPage = () => {
         
         <TabsContent value="webhooks" className="space-y-6">
           <WebhookManager />
+        </TabsContent>
+
+        <TabsContent value="deliveries" className="space-y-6">
+          <WebhookDeliveryDashboard />
         </TabsContent>
 
         <TabsContent value="testing" className="space-y-6">
