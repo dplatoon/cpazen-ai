@@ -1243,7 +1243,62 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      daily_campaign_stats: {
+        Row: {
+          campaign_id: string | null
+          clicks: number | null
+          conversions: number | null
+          cost: number | null
+          date: string | null
+          device: string | null
+          geo: string | null
+          os: string | null
+          profit: number | null
+          revenue: number | null
+          sub_id: string | null
+          traffic_source_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          clicks?: never
+          conversions?: never
+          cost?: never
+          date?: string | null
+          device?: string | null
+          geo?: string | null
+          os?: string | null
+          profit?: never
+          revenue?: never
+          sub_id?: string | null
+          traffic_source_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          clicks?: never
+          conversions?: never
+          cost?: never
+          date?: string | null
+          device?: string | null
+          geo?: string | null
+          os?: string | null
+          profit?: never
+          revenue?: never
+          sub_id?: string | null
+          traffic_source_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_stats_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_create_offer: {
@@ -1394,6 +1449,62 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_campaign_breakdown: {
+        Args: {
+          p_campaign_id: string
+          p_dimension: string
+          p_end_date?: string
+          p_start_date?: string
+        }
+        Returns: {
+          clicks: number
+          conversion_rate: number
+          conversions: number
+          cost: number
+          dimension_value: string
+          profit: number
+          revenue: number
+        }[]
+      }
+      get_campaign_kpis: {
+        Args: {
+          p_campaign_id: string
+          p_end_date?: string
+          p_start_date?: string
+        }
+        Returns: {
+          clicks: number
+          conversion_rate: number
+          conversions: number
+          cost: number
+          cpa: number
+          profit: number
+          revenue: number
+          roas: number
+        }[]
+      }
+      get_dashboard_chart_data: {
+        Args: { p_days?: number; p_user_id: string }
+        Returns: {
+          clicks: number
+          conversions: number
+          date: string
+          revenue: number
+        }[]
+      }
+      get_dashboard_stats: {
+        Args: { p_end_date?: string; p_start_date?: string; p_user_id: string }
+        Returns: {
+          avg_payout: number
+          conversion_rate: number
+          epc: number
+          total_clicks: number
+          total_conversions: number
+          total_cost: number
+          total_profit: number
+          total_revenue: number
+        }[]
+      }
       get_global_offers: {
         Args: never
         Returns: {
@@ -1426,6 +1537,21 @@ export type Database = {
           network_type: string
           postback_secret: string
           user_id: string
+        }[]
+      }
+      get_top_campaigns: {
+        Args: { p_days?: number; p_limit?: number; p_user_id: string }
+        Returns: {
+          campaign_id: string
+          campaign_name: string
+          clicks: number
+          conversion_rate: number
+          conversions: number
+          epc: number
+          network: string
+          offer_name: string
+          revenue: number
+          status: string
         }[]
       }
       get_user_activity_admin: {
