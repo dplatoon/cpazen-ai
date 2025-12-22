@@ -1243,62 +1243,7 @@ export type Database = {
       }
     }
     Views: {
-      daily_campaign_stats: {
-        Row: {
-          campaign_id: string | null
-          clicks: number | null
-          conversions: number | null
-          cost: number | null
-          date: string | null
-          device: string | null
-          geo: string | null
-          os: string | null
-          profit: number | null
-          revenue: number | null
-          sub_id: string | null
-          traffic_source_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          campaign_id?: string | null
-          clicks?: never
-          conversions?: never
-          cost?: never
-          date?: string | null
-          device?: string | null
-          geo?: string | null
-          os?: string | null
-          profit?: never
-          revenue?: never
-          sub_id?: string | null
-          traffic_source_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          campaign_id?: string | null
-          clicks?: never
-          conversions?: never
-          cost?: never
-          date?: string | null
-          device?: string | null
-          geo?: string | null
-          os?: string | null
-          profit?: never
-          revenue?: never
-          sub_id?: string | null
-          traffic_source_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "campaign_stats_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "campaigns"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       admin_create_offer: {
