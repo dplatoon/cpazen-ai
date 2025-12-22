@@ -26,6 +26,8 @@ const AVAILABLE_EVENTS = [
   { value: 'conversion', label: 'Conversion' },
   { value: 'click', label: 'Click' },
   { value: 'fraud_alert', label: 'Fraud Alert' },
+  { value: 'postback_received', label: 'Postback Received' },
+  { value: 'postback_failed', label: 'Postback Failed' },
 ];
 
 // Security: Validate webhook URLs to prevent SSRF attacks
