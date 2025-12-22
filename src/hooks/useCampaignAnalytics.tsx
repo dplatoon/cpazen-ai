@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -31,7 +31,7 @@ export interface HealthScore {
   reason: string;
 }
 
-// Calculate campaign KPIs from clicks and conversions
+// Calculate campaign KPIs - optimized with RPC function
 export function useCampaignKpis(campaignId: string, dateRange?: { start: Date; end: Date }) {
   const { user } = useAuth();
   
@@ -41,7 +41,28 @@ export function useCampaignKpis(campaignId: string, dateRange?: { start: Date; e
       const startDate = dateRange?.start || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const endDate = dateRange?.end || new Date();
 
-      // Get clicks
+      // Try optimized RPC function first
+      const { data, error } = await supabase.rpc('get_campaign_kpis', {
+        p_campaign_id: campaignId,
+        p_start_date: startDate.toISOString().split('T')[0],
+        p_end_date: endDate.toISOString().split('T')[0]
+      });
+
+      if (!error && data && data.length > 0) {
+        const kpis = data[0];
+        return {
+          clicks: Number(kpis.clicks) || 0,
+          conversions: Number(kpis.conversions) || 0,
+          revenue: Number(kpis.revenue) || 0,
+          cost: Number(kpis.cost) || 0,
+          profit: Number(kpis.profit) || 0,
+          cpa: Number(kpis.cpa) || 0,
+          roas: Number(kpis.roas) || 0,
+          conversionRate: Number(kpis.conversion_rate) || 0
+        };
+      }
+
+      // Fall back to direct query
       const { data: clicks, error: clicksError } = await supabase
         .from('clicks')
         .select('id, created_at')
@@ -51,7 +72,6 @@ export function useCampaignKpis(campaignId: string, dateRange?: { start: Date; e
 
       if (clicksError) throw clicksError;
 
-      // Get conversions with payout
       const { data: conversions, error: conversionsError } = await supabase
         .from('conversions')
         .select('id, payout, created_at')
@@ -64,7 +84,7 @@ export function useCampaignKpis(campaignId: string, dateRange?: { start: Date; e
       const totalClicks = clicks?.length || 0;
       const totalConversions = conversions?.length || 0;
       const totalRevenue = conversions?.reduce((sum, c) => sum + Number(c.payout || 0), 0) || 0;
-      const totalCost = 0; // TODO: Implement cost tracking
+      const totalCost = 0;
       const profit = totalRevenue - totalCost;
       const cpa = totalConversions > 0 ? totalCost / totalConversions : 0;
       const roas = totalCost > 0 ? totalRevenue / totalCost : 0;
@@ -85,7 +105,7 @@ export function useCampaignKpis(campaignId: string, dateRange?: { start: Date; e
   });
 }
 
-// Get campaign breakdown by dimension (geo, device, os, subId)
+// Get campaign breakdown by dimension - optimized with RPC function
 export function useCampaignBreakdown(
   campaignId: string, 
   dimension: 'geo' | 'device' | 'os' | 'subId' | 'trafficSource',
@@ -99,7 +119,37 @@ export function useCampaignBreakdown(
       const startDate = dateRange?.start || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const endDate = dateRange?.end || new Date();
 
-      // Map dimension to clicks table column
+      // Try optimized RPC function first
+      const { data, error } = await supabase.rpc('get_campaign_breakdown', {
+        p_campaign_id: campaignId,
+        p_dimension: dimension,
+        p_start_date: startDate.toISOString().split('T')[0],
+        p_end_date: endDate.toISOString().split('T')[0]
+      });
+
+      if (!error && data && data.length > 0) {
+        return data.map((row: {
+          dimension_value: string;
+          clicks: number;
+          conversions: number;
+          revenue: number;
+          cost: number;
+          profit: number;
+          conversion_rate: number;
+        }) => ({
+          dimension,
+          value: row.dimension_value,
+          clicks: Number(row.clicks) || 0,
+          conversions: Number(row.conversions) || 0,
+          revenue: Number(row.revenue) || 0,
+          cost: Number(row.cost) || 0,
+          profit: Number(row.profit) || 0,
+          cpa: row.conversions > 0 ? Number(row.cost) / Number(row.conversions) : 0,
+          roas: row.cost > 0 ? Number(row.revenue) / Number(row.cost) : 0
+        }));
+      }
+
+      // Fall back to direct query
       const columnMap: Record<string, string> = {
         geo: 'country',
         device: 'device',
@@ -110,7 +160,6 @@ export function useCampaignBreakdown(
 
       const column = columnMap[dimension];
 
-      // Get clicks with the dimension
       const { data: clicks, error: clicksError } = await supabase
         .from('clicks')
         .select('id, country, device, os, sub_id, referrer, created_at')
@@ -120,7 +169,6 @@ export function useCampaignBreakdown(
 
       if (clicksError) throw clicksError;
 
-      // Get conversions
       const { data: conversions, error: conversionsError } = await supabase
         .from('conversions')
         .select(`id, payout, click_id, created_at`)
@@ -130,17 +178,15 @@ export function useCampaignBreakdown(
 
       if (conversionsError) throw conversionsError;
 
-      // Build click ID to dimension value map
       const clickDimensions = new Map<string, string>();
       clicks?.forEach(click => {
-        clickDimensions.set(click.id, (click as any)[column] || 'Unknown');
+        clickDimensions.set(click.id, (click as Record<string, unknown>)[column] as string || 'Unknown');
       });
 
-      // Aggregate by dimension
       const aggregated = new Map<string, { clicks: number; conversions: number; revenue: number }>();
 
       clicks?.forEach(click => {
-        const value = (click as any)[column] || 'Unknown';
+        const value = (click as Record<string, unknown>)[column] as string || 'Unknown';
         const existing = aggregated.get(value) || { clicks: 0, conversions: 0, revenue: 0 };
         existing.clicks++;
         aggregated.set(value, existing);
@@ -154,17 +200,16 @@ export function useCampaignBreakdown(
         aggregated.set(value, existing);
       });
 
-      // Convert to array with calculated metrics
-      return Array.from(aggregated.entries()).map(([value, data]) => ({
+      return Array.from(aggregated.entries()).map(([value, aggData]) => ({
         dimension,
         value,
-        clicks: data.clicks,
-        conversions: data.conversions,
-        revenue: data.revenue,
-        cost: 0, // TODO: Implement cost tracking
-        profit: data.revenue,
-        cpa: data.conversions > 0 ? 0 / data.conversions : 0,
-        roas: 0, // No cost tracking yet
+        clicks: aggData.clicks,
+        conversions: aggData.conversions,
+        revenue: aggData.revenue,
+        cost: 0,
+        profit: aggData.revenue,
+        cpa: aggData.conversions > 0 ? 0 / aggData.conversions : 0,
+        roas: 0,
       })).sort((a, b) => b.clicks - a.clicks);
     },
     enabled: !!user && !!campaignId,
@@ -179,21 +224,19 @@ export function useCampaignHealthScore(campaignId: string) {
   return useQuery({
     queryKey: ['campaign-health', campaignId, kpis],
     queryFn: async (): Promise<HealthScore> => {
-      // Get campaign target CPA
       const { data: campaign } = await supabase
         .from('campaigns')
         .select('target_cpa, daily_budget')
         .eq('id', campaignId)
-        .single();
+        .maybeSingle();
 
       if (!kpis) {
         return { score: 0, label: 'Low data', reason: 'Insufficient data to calculate health score' };
       }
 
-      let score = 50; // Base score
-      let reasons: string[] = [];
+      let score = 50;
+      const reasons: string[] = [];
 
-      // Data volume scoring (0-25 points)
       if (kpis.clicks < 100) {
         score -= 25;
         reasons.push('Low click volume');
@@ -212,7 +255,6 @@ export function useCampaignHealthScore(campaignId: string) {
         score += 5;
       }
 
-      // CPA vs target scoring (0-25 points)
       const targetCpa = campaign?.target_cpa || 0;
       if (targetCpa > 0 && kpis.cpa > 0) {
         const cpaRatio = kpis.cpa / targetCpa;
@@ -228,7 +270,6 @@ export function useCampaignHealthScore(campaignId: string) {
         }
       }
 
-      // Conversion rate scoring (0-15 points)
       if (kpis.conversionRate >= 5) {
         score += 15;
       } else if (kpis.conversionRate >= 2) {
@@ -239,7 +280,6 @@ export function useCampaignHealthScore(campaignId: string) {
         reasons.push('Low conversion rate');
       }
 
-      // ROAS scoring (0-10 points)
       if (kpis.roas >= 2) {
         score += 10;
       } else if (kpis.roas >= 1.5) {
@@ -248,10 +288,8 @@ export function useCampaignHealthScore(campaignId: string) {
         reasons.push('ROAS below 1');
       }
 
-      // Clamp score
       score = Math.max(0, Math.min(100, score));
 
-      // Determine label
       let label: 'Stable' | 'Needs attention' | 'Low data';
       if (kpis.conversions < 10 || kpis.clicks < 100) {
         label = 'Low data';
@@ -299,7 +337,6 @@ export function useCampaignTimeSeries(campaignId: string, metric: string, days: 
 
       if (conversionsError) throw conversionsError;
 
-      // Aggregate by day
       const dailyData = new Map<string, { clicks: number; conversions: number; revenue: number }>();
 
       for (let i = 0; i < days; i++) {
@@ -327,12 +364,12 @@ export function useCampaignTimeSeries(campaignId: string, metric: string, days: 
       });
 
       return Array.from(dailyData.entries())
-        .map(([date, data]) => ({
+        .map(([date, aggData]) => ({
           date,
-          clicks: data.clicks,
-          conversions: data.conversions,
-          revenue: data.revenue,
-          cpa: data.conversions > 0 ? 0 : 0, // TODO: cost tracking
+          clicks: aggData.clicks,
+          conversions: aggData.conversions,
+          revenue: aggData.revenue,
+          cpa: aggData.conversions > 0 ? 0 : 0,
           roas: 0,
         }))
         .sort((a, b) => a.date.localeCompare(b.date));
