@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Trash2, RefreshCw, Copy, Eye, EyeOff, Download } from 'lucide-react';
-import { useNetworkAccounts, type CreateNetworkAccountInput } from '@/hooks/useNetworkAccounts';
+import { Plus, MoreHorizontal, Trash2, RefreshCw, Copy, Eye, EyeOff, Download, Pencil, Clock } from 'lucide-react';
+import { useNetworkAccounts, type CreateNetworkAccountInput, type NetworkAccount, type UpdateNetworkAccountInput } from '@/hooks/useNetworkAccounts';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NetworkOfferImport } from '@/components/offers/NetworkOfferImport';
@@ -91,11 +92,14 @@ const NETWORK_CONFIGS = [
 ];
 
 export function NetworkAccountManager() {
-  const { accounts, postbackKeys, isLoading, createAccount, isCreating, deleteAccount, regeneratePostbackKey, getPostbackKeyForAccount } = useNetworkAccounts();
+  const { accounts, postbackKeys, isLoading, createAccount, isCreating, updateAccount, isUpdating, deleteAccount, regeneratePostbackKey, getPostbackKeyForAccount } = useNetworkAccounts();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<NetworkAccount | null>(null);
   const [selectedNetwork, setSelectedNetwork] = useState('');
   const [formData, setFormData] = useState<Record<string, string>>({});
+  const [editFormData, setEditFormData] = useState<Record<string, string | boolean>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [importAccount, setImportAccount] = useState<typeof accounts[0] | null>(null);
 
@@ -134,6 +138,60 @@ export function NetworkAccountManager() {
         setIsDialogOpen(false);
         setSelectedNetwork('');
         setFormData({});
+      },
+    });
+  };
+
+  const handleEdit = (account: NetworkAccount) => {
+    const networkInfo = getNetworkInfo(account.network_type);
+    const credentials = (account.config_json?.credentials as Record<string, string>) || {};
+    
+    setEditingAccount(account);
+    setEditFormData({
+      name: account.name,
+      external_id: account.external_id || '',
+      api_key: '', // Don't show existing API key for security
+      auto_sync: account.auto_sync ?? false,
+      ...credentials,
+    });
+    setShowSecrets({});
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdate = () => {
+    if (!editingAccount) return;
+    
+    const networkInfo = getNetworkInfo(editingAccount.network_type);
+    
+    // Build credentials from non-secret fields
+    const credentials: Record<string, string> = {};
+    networkInfo?.fields.forEach(field => {
+      if (!field.secret && editFormData[field.key]) {
+        credentials[field.key] = editFormData[field.key] as string;
+      }
+    });
+
+    const input: UpdateNetworkAccountInput = {
+      id: editingAccount.id,
+      name: editFormData.name as string,
+      external_id: editFormData.external_id as string || undefined,
+      config_json: {
+        ...editingAccount.config_json,
+        credentials,
+      } as Json,
+      auto_sync: editFormData.auto_sync as boolean,
+    };
+
+    // Only update API key if a new one was provided
+    if (editFormData.api_key) {
+      input.api_key = editFormData.api_key as string;
+    }
+
+    updateAccount(input, {
+      onSuccess: () => {
+        setIsEditDialogOpen(false);
+        setEditingAccount(null);
+        setEditFormData({});
       },
     });
   };
@@ -322,9 +380,22 @@ export function NetworkAccountManager() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={account.is_active ? 'default' : 'secondary'}>
-                        {account.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={account.is_active ? 'default' : 'secondary'}>
+                          {account.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                        {account.auto_sync && (
+                          <Badge variant="outline" className="gap-1">
+                            <Clock className="h-3 w-3" />
+                            Auto-sync
+                          </Badge>
+                        )}
+                        {account.api_key && (
+                          <Badge variant="outline" className="text-green-600 border-green-600">
+                            API
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
@@ -334,6 +405,10 @@ export function NetworkAccountManager() {
                           </Button>
                         </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(account)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit Account
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setImportAccount(account)}>
                               <Download className="h-4 w-4 mr-2" />
                               Import Offers
@@ -372,6 +447,82 @@ export function NetworkAccountManager() {
           onOpenChange={(open) => !open && setImportAccount(null)}
         />
       )}
+
+      {/* Edit Account Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Network Account</DialogTitle>
+            <DialogDescription>
+              Update your network credentials and settings
+            </DialogDescription>
+          </DialogHeader>
+          {editingAccount && (
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label>Account Name</Label>
+                <Input
+                  value={editFormData.name as string || ''}
+                  onChange={e => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Account name"
+                />
+              </div>
+
+              {getNetworkInfo(editingAccount.network_type)?.fields.map(field => (
+                <div key={field.key} className="space-y-2">
+                  <Label>
+                    {field.label}
+                    {field.secret && <span className="text-muted-foreground ml-1">(leave blank to keep current)</span>}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type={field.secret && !showSecrets[field.key] ? 'password' : 'text'}
+                      value={(field.secret ? editFormData.api_key : editFormData[field.key]) as string || ''}
+                      onChange={e => setEditFormData(prev => ({ 
+                        ...prev, 
+                        [field.secret ? 'api_key' : field.key]: e.target.value 
+                      }))}
+                      placeholder={field.secret ? '••••••••' : `Enter ${field.label.toLowerCase()}`}
+                    />
+                    {field.secret && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                        onClick={() => setShowSecrets(prev => ({ ...prev, [field.key]: !prev[field.key] }))}
+                      >
+                        {showSecrets[field.key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <Label>Auto-sync Offers</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically refresh offers every hour
+                  </p>
+                </div>
+                <Switch
+                  checked={editFormData.auto_sync as boolean}
+                  onCheckedChange={(checked) => setEditFormData(prev => ({ ...prev, auto_sync: checked }))}
+                />
+              </div>
+
+              <Button
+                onClick={handleUpdate}
+                disabled={isUpdating}
+                className="w-full bg-gradient-brand hover:opacity-90"
+              >
+                {isUpdating ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

@@ -12,6 +12,8 @@ export interface NetworkAccount {
   external_id: string | null;
   postback_secret: string;
   config_json: Record<string, unknown>;
+  api_key: string | null;
+  auto_sync: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -32,6 +34,17 @@ export interface CreateNetworkAccountInput {
   external_id?: string;
   config_json?: Json;
   api_key?: string;
+  auto_sync?: boolean;
+}
+
+export interface UpdateNetworkAccountInput {
+  id: string;
+  name?: string;
+  external_id?: string;
+  config_json?: Json;
+  api_key?: string;
+  auto_sync?: boolean;
+  is_active?: boolean;
 }
 
 export function useNetworkAccounts() {
@@ -124,18 +137,19 @@ export function useNetworkAccounts() {
   });
 
   const updateAccountMutation = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<NetworkAccount> & { id: string }) => {
+    mutationFn: async (input: UpdateNetworkAccountInput) => {
       const updateData: Record<string, unknown> = {};
-      if (updates.name !== undefined) updateData.name = updates.name;
-      if (updates.network_type !== undefined) updateData.network_type = updates.network_type;
-      if (updates.external_id !== undefined) updateData.external_id = updates.external_id;
-      if (updates.is_active !== undefined) updateData.is_active = updates.is_active;
-      if (updates.config_json !== undefined) updateData.config_json = updates.config_json as Json;
+      if (input.name !== undefined) updateData.name = input.name;
+      if (input.external_id !== undefined) updateData.external_id = input.external_id;
+      if (input.is_active !== undefined) updateData.is_active = input.is_active;
+      if (input.config_json !== undefined) updateData.config_json = input.config_json as Json;
+      if (input.api_key !== undefined) updateData.api_key = input.api_key;
+      if (input.auto_sync !== undefined) updateData.auto_sync = input.auto_sync;
 
       const { data, error } = await supabase
         .from('network_accounts')
         .update(updateData)
-        .eq('id', id)
+        .eq('id', input.id)
         .select()
         .single();
 
