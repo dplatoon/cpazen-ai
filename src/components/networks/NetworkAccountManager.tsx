@@ -8,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Trash2, RefreshCw, Copy, Eye, EyeOff } from 'lucide-react';
+import { Plus, MoreHorizontal, Trash2, RefreshCw, Copy, Eye, EyeOff, Download } from 'lucide-react';
 import { useNetworkAccounts, type CreateNetworkAccountInput } from '@/hooks/useNetworkAccounts';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { NetworkOfferImport } from '@/components/offers/NetworkOfferImport';
 import type { Json } from '@/integrations/supabase/types';
 
 const NETWORK_CONFIGS = [
@@ -96,6 +97,7 @@ export function NetworkAccountManager() {
   const [selectedNetwork, setSelectedNetwork] = useState('');
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+  const [importAccount, setImportAccount] = useState<typeof accounts[0] | null>(null);
 
   const networkConfig = NETWORK_CONFIGS.find(n => n.id === selectedNetwork);
 
@@ -325,23 +327,27 @@ export function NetworkAccountManager() {
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => copyToClipboard(getPostbackUrl(account.id), 'Postback URL')}>
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy Postback URL
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => regeneratePostbackKey(account.id)}>
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Regenerate Key
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => deleteAccount(account.id)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setImportAccount(account)}>
+                              <Download className="h-4 w-4 mr-2" />
+                              Import Offers
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => copyToClipboard(getPostbackUrl(account.id), 'Postback URL')}>
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copy Postback URL
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => regeneratePostbackKey(account.id)}>
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              Regenerate Key
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => deleteAccount(account.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
@@ -351,6 +357,15 @@ export function NetworkAccountManager() {
           </Table>
         )}
       </CardContent>
+
+      {/* Import Offers Dialog */}
+      {importAccount && (
+        <NetworkOfferImport
+          account={importAccount}
+          open={!!importAccount}
+          onOpenChange={(open) => !open && setImportAccount(null)}
+        />
+      )}
     </Card>
   );
 }
