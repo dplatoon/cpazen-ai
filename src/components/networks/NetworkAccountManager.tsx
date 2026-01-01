@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Trash2, RefreshCw, Copy, Eye, EyeOff, Download, Pencil, Clock } from 'lucide-react';
+import { Plus, MoreHorizontal, Trash2, RefreshCw, Copy, Eye, EyeOff, Download, Pencil, Clock, Loader2 } from 'lucide-react';
 import { useNetworkAccounts, type CreateNetworkAccountInput, type NetworkAccount, type UpdateNetworkAccountInput } from '@/hooks/useNetworkAccounts';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NetworkOfferImport } from '@/components/offers/NetworkOfferImport';
+import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 
 const NETWORK_CONFIGS = [
@@ -102,7 +103,46 @@ export function NetworkAccountManager() {
   const [editFormData, setEditFormData] = useState<Record<string, string | boolean>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [importAccount, setImportAccount] = useState<typeof accounts[0] | null>(null);
+  const [syncingAccounts, setSyncingAccounts] = useState<Set<string>>(new Set());
 
+  const handleSyncNow = async (account: NetworkAccount) => {
+    if (!account.api_key) {
+      toast({
+        title: 'API Key Required',
+        description: 'Please add an API key to this account before syncing offers.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSyncingAccounts(prev => new Set(prev).add(account.id));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-network-offers', {
+        body: { networkAccountId: account.id },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sync Complete',
+        description: `Successfully synced ${data?.offers?.length || 0} offers from ${account.name}.`,
+      });
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      toast({
+        title: 'Sync Failed',
+        description: error.message || 'Failed to sync offers from network.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSyncingAccounts(prev => {
+        const next = new Set(prev);
+        next.delete(account.id);
+        return next;
+      });
+    }
+  };
   const networkConfig = NETWORK_CONFIGS.find(n => n.id === selectedNetwork);
 
   const handleCreate = () => {
@@ -405,6 +445,17 @@ export function NetworkAccountManager() {
                           </Button>
                         </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => handleSyncNow(account)}
+                              disabled={!account.api_key || syncingAccounts.has(account.id)}
+                            >
+                              {syncingAccounts.has(account.id) ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                              )}
+                              Sync Now
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEdit(account)}>
                               <Pencil className="h-4 w-4 mr-2" />
                               Edit Account
