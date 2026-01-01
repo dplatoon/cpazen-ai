@@ -18,6 +18,9 @@ verify_jwt = true
 [functions.bot-detection]
 verify_jwt = false
 
+[functions.fetch-network-offers]
+verify_jwt = true
+
 [functions.fraud-detection]
 verify_jwt = false
 

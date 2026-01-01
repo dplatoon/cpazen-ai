@@ -645,6 +645,7 @@ export type Database = {
       }
       network_accounts: {
         Row: {
+          auto_sync: boolean | null
           config_json: Json | null
           created_at: string | null
           external_id: string | null
@@ -657,6 +658,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_sync?: boolean | null
           config_json?: Json | null
           created_at?: string | null
           external_id?: string | null
@@ -669,6 +671,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auto_sync?: boolean | null
           config_json?: Json | null
           created_at?: string | null
           external_id?: string | null
@@ -725,8 +728,10 @@ export type Database = {
           currency: string
           daily_cap: number | null
           id: string
+          last_synced_at: string | null
           name: string
           network: string | null
+          network_offer_id: string | null
           offer_url: string
           payout: number
           status: string
@@ -739,8 +744,10 @@ export type Database = {
           currency?: string
           daily_cap?: number | null
           id?: string
+          last_synced_at?: string | null
           name: string
           network?: string | null
+          network_offer_id?: string | null
           offer_url: string
           payout: number
           status?: string
@@ -753,8 +760,10 @@ export type Database = {
           currency?: string
           daily_cap?: number | null
           id?: string
+          last_synced_at?: string | null
           name?: string
           network?: string | null
+          network_offer_id?: string | null
           offer_url?: string
           payout?: number
           status?: string
