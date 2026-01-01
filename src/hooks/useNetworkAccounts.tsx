@@ -31,6 +31,7 @@ export interface CreateNetworkAccountInput {
   name: string;
   external_id?: string;
   config_json?: Json;
+  api_key?: string;
 }
 
 export function useNetworkAccounts() {
@@ -86,6 +87,7 @@ export function useNetworkAccounts() {
           name: input.name,
           external_id: input.external_id || null,
           config_json: input.config_json || {} as Json,
+          api_key: input.api_key || null,
         }])
         .select()
         .single();

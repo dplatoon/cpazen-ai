@@ -91,15 +91,15 @@ serve(async (req) => {
     }
 
     const config = account.config_json as Record<string, unknown>;
-    const credentials = config?.credentials as Record<string, string> || {};
+    const apiKey = account.api_key as string | null;
     let offers: NetworkOffer[] = [];
 
-    console.log(`Fetching offers for network: ${account.network_type}`);
+    console.log(`Fetching offers for network: ${account.network_type}, has API key: ${!!apiKey}`);
 
     if (account.network_type === 'maxbounty') {
-      offers = await fetchMaxBountyOffers(credentials, account.external_id);
+      offers = await fetchMaxBountyOffers(apiKey, account.external_id);
     } else if (account.network_type === 'everflow') {
-      offers = await fetchEverflowOffers(credentials);
+      offers = await fetchEverflowOffers(apiKey, account.external_id);
     } else {
       // For networks without API support, return demo offers
       offers = generateDemoOffers(account.network_type, account.name);
@@ -129,16 +129,14 @@ serve(async (req) => {
   }
 });
 
-async function fetchMaxBountyOffers(credentials: Record<string, string>, affiliateId: string | null): Promise<NetworkOffer[]> {
-  const apiKey = credentials.apiKey;
-  
+async function fetchMaxBountyOffers(apiKey: string | null, affiliateId: string | null): Promise<NetworkOffer[]> {
   if (!apiKey) {
     console.log('No MaxBounty API key, returning demo offers');
     return generateDemoOffers('maxbounty', 'MaxBounty');
   }
 
   try {
-    // MaxBounty API endpoint (this is a placeholder - actual endpoint may vary)
+    // MaxBounty API endpoint
     const response = await fetch(`https://www.maxbounty.com/api/v1/offers`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -170,10 +168,7 @@ async function fetchMaxBountyOffers(credentials: Record<string, string>, affilia
   }
 }
 
-async function fetchEverflowOffers(credentials: Record<string, string>): Promise<NetworkOffer[]> {
-  const apiToken = credentials.apiToken;
-  const networkId = credentials.networkId;
-
+async function fetchEverflowOffers(apiToken: string | null, networkId: string | null): Promise<NetworkOffer[]> {
   if (!apiToken || !networkId) {
     console.log('No Everflow API credentials, returning demo offers');
     return generateDemoOffers('everflow', 'Everflow');

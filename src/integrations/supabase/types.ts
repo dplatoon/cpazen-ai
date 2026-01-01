@@ -645,6 +645,7 @@ export type Database = {
       }
       network_accounts: {
         Row: {
+          api_key: string | null
           auto_sync: boolean | null
           config_json: Json | null
           created_at: string | null
@@ -658,6 +659,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          api_key?: string | null
           auto_sync?: boolean | null
           config_json?: Json | null
           created_at?: string | null
@@ -671,6 +673,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          api_key?: string | null
           auto_sync?: boolean | null
           config_json?: Json | null
           created_at?: string | null

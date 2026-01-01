@@ -104,9 +104,14 @@ export function NetworkAccountManager() {
   const handleCreate = () => {
     if (!networkConfig) return;
 
+    // Get the API key field for this network
+    const apiKeyField = networkConfig.fields.find(f => f.secret && (f.key === 'apiKey' || f.key === 'apiToken'));
+    const apiKey = apiKeyField ? formData[apiKeyField.key] : undefined;
+
+    // Store non-secret credentials in config_json
     const credentials: Record<string, string> = {};
     networkConfig.fields.forEach(field => {
-      if (formData[field.key]) {
+      if (formData[field.key] && !field.secret) {
         credentials[field.key] = formData[field.key];
       }
     });
@@ -119,8 +124,9 @@ export function NetworkAccountManager() {
     const input: CreateNetworkAccountInput = {
       network_type: networkConfig.id,
       name: formData.name || networkConfig.name,
-      external_id: formData.affiliateId || formData.publisherId || formData.accountNickname,
+      external_id: formData.affiliateId || formData.networkId || formData.publisherId || formData.accountNickname,
       config_json: configJson,
+      api_key: apiKey,
     };
 
     createAccount(input, {
