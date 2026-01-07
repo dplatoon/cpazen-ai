@@ -104,6 +104,9 @@ export function NetworkAccountManager() {
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [importAccount, setImportAccount] = useState<typeof accounts[0] | null>(null);
   const [syncingAccounts, setSyncingAccounts] = useState<Set<string>>(new Set());
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
+
+  const accountsWithApiKey = accounts.filter(a => a.api_key);
 
   const handleSyncNow = async (account: NetworkAccount) => {
     if (!account.api_key) {
@@ -142,6 +145,48 @@ export function NetworkAccountManager() {
         return next;
       });
     }
+  };
+
+  const handleSyncAll = async () => {
+    if (accountsWithApiKey.length === 0) {
+      toast({
+        title: 'No Accounts to Sync',
+        description: 'Add API keys to your network accounts to enable syncing.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSyncingAll(true);
+    const allIds = new Set(accountsWithApiKey.map(a => a.id));
+    setSyncingAccounts(allIds);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    await Promise.all(
+      accountsWithApiKey.map(async (account) => {
+        try {
+          const { error } = await supabase.functions.invoke('fetch-network-offers', {
+            body: { networkAccountId: account.id },
+          });
+          if (error) throw error;
+          successCount++;
+        } catch (error) {
+          console.error(`Sync error for ${account.name}:`, error);
+          failCount++;
+        }
+      })
+    );
+
+    setSyncingAccounts(new Set());
+    setIsSyncingAll(false);
+
+    toast({
+      title: 'Sync All Complete',
+      description: `Successfully synced ${successCount} account${successCount !== 1 ? 's' : ''}${failCount > 0 ? `, ${failCount} failed` : ''}.`,
+      variant: failCount > 0 ? 'destructive' : 'default',
+    });
   };
   const networkConfig = NETWORK_CONFIGS.find(n => n.id === selectedNetwork);
 
@@ -277,13 +322,28 @@ export function NetworkAccountManager() {
             Connect your affiliate networks to sync offers and track conversions
           </CardDescription>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-brand hover:opacity-90">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Network
+        <div className="flex items-center gap-2">
+          {accountsWithApiKey.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={handleSyncAll}
+              disabled={isSyncingAll}
+            >
+              {isSyncingAll ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Sync All ({accountsWithApiKey.length})
             </Button>
-          </DialogTrigger>
+          )}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-brand hover:opacity-90">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Network
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Connect Affiliate Network</DialogTitle>
@@ -361,7 +421,8 @@ export function NetworkAccountManager() {
               )}
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent>
         {accounts.length === 0 ? (
