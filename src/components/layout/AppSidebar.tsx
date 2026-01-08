@@ -1,4 +1,4 @@
-import { BarChart3, Target, Zap, Settings, Users, Globe, Brain, TrendingUp, Bell, Shield, ClipboardCheck, LayoutDashboard, Package } from "lucide-react";
+import { BarChart3, Target, Settings, Users, Brain, TrendingUp, Shield, ClipboardCheck, Package, Zap } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import cpazenLogo from "@/assets/cpazen-logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,22 +17,25 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+// Main navigation - visible to all authenticated users
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Campaigns", href: "/campaigns", icon: Target },
-  { name: "Offers", href: "/offers", icon: Zap },
   { name: "AI Tools", href: "/ai-tools", icon: Brain },
   { name: "Analytics", href: "/analytics", icon: TrendingUp },
   { name: "Integration", href: "/integration", icon: Settings },
   { name: "Profile", href: "/profile", icon: Users },
 ];
 
+// Affiliate-only navigation
 const affiliateNavigation = [
   { name: "Affiliate Hub", href: "/affiliate-dashboard", icon: Package },
 ];
 
+// Admin-only navigation - includes Offers management
 const adminNavigation = [
   { name: "Admin", href: "/admin", icon: Shield },
+  { name: "Offers", href: "/offers", icon: Zap },
   { name: "Project Audit", href: "/audit", icon: ClipboardCheck },
 ];
 
@@ -86,62 +89,63 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Affiliate Section - visible to affiliates */}
+        {userRole === 'affiliate' && (
+          <SidebarGroup>
+            <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
+              Affiliate
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {affiliateNavigation.map((item) => (
+                  <SidebarMenuItem key={item.name}>
+                    <SidebarMenuButton asChild isActive={isActive(item.href)}>
+                      <NavLink 
+                        to={item.href} 
+                        end
+                        className={getNavClass}
+                      >
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                        {!isCollapsed && <span className="truncate">{item.name}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+        )}
 
-          {/* Affiliate Section - visible to affiliates */}
-          {userRole === 'affiliate' && (
-            <SidebarGroup>
-              <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
-                Affiliate
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {affiliateNavigation.map((item) => (
-                    <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton asChild isActive={isActive(item.href)}>
-                        <NavLink 
-                          to={item.href} 
-                          end
-                          className={getNavClass}
-                        >
-                          <item.icon className="h-5 w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="truncate">{item.name}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )}
-
-          {userRole === 'admin' && (
-            <SidebarGroup>
-              <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
-                Admin
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {adminNavigation.map((item) => (
-                    <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton asChild isActive={isActive(item.href)}>
-                        <NavLink 
-                          to={item.href} 
-                          end
-                          className={getNavClass}
-                        >
-                          <item.icon className="h-5 w-5 flex-shrink-0" />
-                          {!isCollapsed && <span className="truncate">{item.name}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )}
-        </SidebarContent>
+        {/* Admin Section - visible only to admins */}
+        {userRole === 'admin' && (
+          <SidebarGroup>
+            <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
+              Admin
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminNavigation.map((item) => (
+                  <SidebarMenuItem key={item.name}>
+                    <SidebarMenuButton asChild isActive={isActive(item.href)}>
+                      <NavLink 
+                        to={item.href} 
+                        end
+                        className={getNavClass}
+                      >
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                        {!isCollapsed && <span className="truncate">{item.name}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+      </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="flex items-center space-x-3">

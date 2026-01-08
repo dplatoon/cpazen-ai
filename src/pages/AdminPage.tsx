@@ -6,11 +6,12 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Users, AlertTriangle, Activity, TrendingUp, DollarSign, Package, UserCog, FileText } from 'lucide-react';
+import { Shield, Users, AlertTriangle, Activity, TrendingUp, DollarSign, Package, UserCog, FileText, BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AdminOfferManager } from '@/components/admin/AdminOfferManager';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
+import { AdminWorkflowGuide } from '@/components/admin/AdminWorkflowGuide';
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -294,8 +295,12 @@ export default function AdminPage() {
       </div>
 
       {/* Detailed Views */}
-      <Tabs defaultValue="activity" className="space-y-4">
-        <TabsList>
+      <Tabs defaultValue="guide" className="space-y-4">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="guide">
+            <BookOpen className="mr-2 h-4 w-4" />
+            Guide
+          </TabsTrigger>
           <TabsTrigger value="activity">Recent Activity</TabsTrigger>
           <TabsTrigger value="audit-logs">
             <FileText className="mr-2 h-4 w-4" />
@@ -318,6 +323,10 @@ export default function AdminPage() {
             )}
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="guide" className="space-y-4">
+          <AdminWorkflowGuide />
+        </TabsContent>
 
         <TabsContent value="activity" className="space-y-4">
           <Card>
