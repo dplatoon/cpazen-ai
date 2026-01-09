@@ -1,4 +1,4 @@
-import { BarChart3, Target, Settings, Users, Brain, TrendingUp, Shield, ClipboardCheck, Package, Zap } from "lucide-react";
+import { BarChart3, Target, Settings, Users, Brain, TrendingUp, Shield, ClipboardCheck, Package, Zap, ShieldAlert } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import cpazenLogo from "@/assets/cpazen-logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,6 +36,7 @@ const affiliateNavigation = [
 const adminNavigation = [
   { name: "Admin", href: "/admin", icon: Shield },
   { name: "Offers", href: "/offers", icon: Zap },
+  { name: "Security Events", href: "/security-events", icon: ShieldAlert },
   { name: "Project Audit", href: "/audit", icon: ClipboardCheck },
 ];
 
