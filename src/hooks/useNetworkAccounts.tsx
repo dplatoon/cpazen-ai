@@ -148,7 +148,7 @@ export function useNetworkAccounts() {
 
       const { data, error } = await supabase
         .from('network_accounts')
-        .update(updateData)
+        .update(updateData as any)
         .eq('id', input.id)
         .select()
         .single();

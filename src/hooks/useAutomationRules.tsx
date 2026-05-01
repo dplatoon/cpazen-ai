@@ -127,7 +127,7 @@ export function useUpdateAutomationRule() {
       
       const { error } = await supabase
         .from('automation_rules')
-        .update(updateData)
+        .update(updateData as any)
         .eq('id', id);
 
       if (error) throw error;

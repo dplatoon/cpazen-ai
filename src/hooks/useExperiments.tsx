@@ -125,7 +125,7 @@ export function useUpdateExperiment() {
       
       const { error } = await supabase
         .from('experiments')
-        .update(updateData)
+        .update(updateData as any)
         .eq('id', id);
 
       if (error) throw error;

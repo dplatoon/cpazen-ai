@@ -29,7 +29,6 @@ export function useProfileBootstrap() {
             .insert({
               user_id: user.id,
               email: user.email || '',
-              role: 'affiliate'
             });
 
           if (insertError) {
