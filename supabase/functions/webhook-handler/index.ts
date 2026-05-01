@@ -6,7 +6,7 @@ const internalSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-secret',
 };
 
 interface WebhookPayload {
