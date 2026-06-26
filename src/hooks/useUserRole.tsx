@@ -27,13 +27,17 @@ export function useUserRole() {
 
       if (error) {
         console.error('Error fetching user role:', error);
-        return 'affiliate'; // Default to affiliate on error
+        // Throw to let React Query handle retry logic
+        // instead of silently defaulting to 'affiliate' (security risk)
+        throw new Error('Failed to fetch user role');
       }
 
       return data?.role as UserRole || 'affiliate';
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    retry: 3, // Retry 3 times before showing error
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
 }
 

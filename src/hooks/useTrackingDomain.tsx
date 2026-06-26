@@ -23,23 +23,52 @@ export function useTrackingDomain() {
     queryFn: async (): Promise<TrackingDomainConfig> => {
       if (!user) return defaultConfig;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_name')
+      // Read from tracking_domains table for verified custom domains
+      const { data: domainData, error: domainError } = await supabase
+        .from('tracking_domains')
+        .select('domain, is_verified, is_primary')
         .eq('user_id', user.id)
-        .single();
+        .eq('is_verified', true)
+        .order('is_primary', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      // For now, return default config - in future this could be stored in profile
+      if (domainError) {
+        console.error('Error fetching tracking domain:', domainError);
+        return defaultConfig;
+      }
+
+      if (domainData?.domain) {
+        return {
+          custom_domain: domainData.domain,
+          use_custom_domain: true,
+        };
+      }
+
       return defaultConfig;
     },
     enabled: !!user,
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
   });
 
   const updateDomainMutation = useMutation({
     mutationFn: async (newConfig: Partial<TrackingDomainConfig>) => {
       if (!user) throw new Error('User not authenticated');
       
-      // For now, just return the config - in future this could be stored in database
+      if (newConfig.custom_domain) {
+        // Upsert tracking domain record
+        const { error } = await supabase
+          .from('tracking_domains')
+          .upsert({
+            user_id: user.id,
+            domain: newConfig.custom_domain,
+            is_verified: false,
+            is_primary: true,
+          }, { onConflict: 'user_id,domain' });
+
+        if (error) throw error;
+      }
+
       return { ...config, ...newConfig };
     },
     onSuccess: (newConfig) => {

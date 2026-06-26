@@ -127,6 +127,18 @@ serve(async (req) => {
               'unknown';
     const referrer = (req.headers.get('referer') || '').slice(0, 500);
     
+    // Geo detection from headers (Cloudflare, Vercel, or Supabase edge headers)
+    const country = req.headers.get('cf-ipcountry') || 
+                    req.headers.get('x-vercel-ip-country') ||
+                    req.headers.get('x-country-code') || 
+                    null;
+    const city = req.headers.get('cf-ipcity') || 
+                 req.headers.get('x-vercel-ip-city') ||
+                 null;
+    const region = req.headers.get('cf-region') || 
+                   req.headers.get('x-vercel-ip-country-region') ||
+                   null;
+    
     // Parse user agent info (simplified)
     const getOSFromUA = (ua: string): string => {
       if (ua.includes('Windows')) return 'Windows';
@@ -157,6 +169,8 @@ serve(async (req) => {
         browser: getBrowserFromUA(userAgent),
         referrer: referrer,
         sub_id: validSubId,
+        country: country,
+        city: city,
         bot_score: 0 // Will be updated by bot detection
       })
       .select('click_id')
