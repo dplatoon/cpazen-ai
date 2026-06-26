@@ -2,20 +2,45 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGlobalOffers } from '@/hooks/useGlobalOffers';
 import { useCampaignMetrics } from '@/hooks/useCampaignMetrics';
-import { Search, DollarSign, Globe, TrendingUp, MousePointer, ArrowUpRight, Package } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { 
+  DollarSign, Globe, TrendingUp, MousePointer, 
+  Package, CreditCard, ArrowUpRight, BarChart3 
+} from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { NetworkBadge } from '@/components/offers/NetworkBadge';
-import { CreateCampaignDialog } from '@/components/campaigns/CreateCampaignDialog';
+
+// New portal components
+import { EarningsDashboard } from '@/components/affiliate/EarningsDashboard';
+import { PaymentMethodsManager } from '@/components/affiliate/PaymentMethodsManager';
+import { WithdrawalPanel } from '@/components/affiliate/WithdrawalPanel';
+import { OfferMarketplace } from '@/components/affiliate/OfferMarketplace';
 
 export default function AffiliateDashboard() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const { data: globalOffers, isLoading: globalLoading } = useGlobalOffers();
   const { data: metrics, isLoading: metricsLoading } = useCampaignMetrics();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [campaignDialogOpen, setCampaignDialogOpen] = useState(false);
-  const [selectedOfferId, setSelectedOfferId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-teal"></div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   // Aggregate metrics across all campaigns
   const aggregatedMetrics = metrics ? Object.values(metrics).reduce(
@@ -27,224 +52,77 @@ export default function AffiliateDashboard() {
     { totalClicks: 0, totalConversions: 0, totalRevenue: 0 }
   ) : { totalClicks: 0, totalConversions: 0, totalRevenue: 0 };
 
-  const filteredGlobalOffers = globalOffers?.filter(offer =>
-    offer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (offer.network?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-  ) || [];
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-success/10 text-success border-success/20">Active</Badge>;
-      case 'paused':
-        return <Badge className="bg-warning/10 text-warning border-warning/20">Paused</Badge>;
-      case 'stopped':
-        return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Stopped</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
-
-  const handleCreateCampaign = (offerId: string) => {
-    setSelectedOfferId(offerId);
-    setCampaignDialogOpen(true);
-  };
-
-  const handleDialogClose = (open: boolean) => {
-    setCampaignDialogOpen(open);
-    if (!open) {
-      setSelectedOfferId(undefined);
-    }
-  };
+  const overviewCards = [
+    { label: 'Total Clicks', value: aggregatedMetrics.totalClicks.toLocaleString(), icon: MousePointer, color: 'text-brand-teal', bg: 'bg-brand-teal/10' },
+    { label: 'Conversions', value: aggregatedMetrics.totalConversions.toLocaleString(), icon: TrendingUp, color: 'text-success', bg: 'bg-success/10' },
+    { label: 'Revenue', value: `$${aggregatedMetrics.totalRevenue.toFixed(2)}`, icon: DollarSign, color: 'text-brand-purple', bg: 'bg-brand-purple/10' },
+    { label: 'Available Offers', value: String(globalOffers?.length || 0), icon: Package, color: 'text-warning', bg: 'bg-warning/10' },
+  ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Affiliate Dashboard</h1>
-        <p className="text-muted-foreground mt-2">
-          Browse available offers from the network and track your performance
-        </p>
+        <h1 className="text-2xl font-bold text-foreground">Affiliate Portal</h1>
+        <p className="text-foreground-muted mt-1">Manage your offers, earnings, and payouts</p>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Clicks</CardTitle>
-            <MousePointer className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {metricsLoading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="text-2xl font-bold">{aggregatedMetrics.totalClicks.toLocaleString()}</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conversions</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {metricsLoading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="text-2xl font-bold">{aggregatedMetrics.totalConversions.toLocaleString()}</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {metricsLoading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="text-2xl font-bold">${aggregatedMetrics.totalRevenue.toFixed(2)}</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-            <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {metricsLoading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="text-2xl font-bold">
-                {aggregatedMetrics.totalClicks > 0 
-                  ? ((aggregatedMetrics.totalConversions / aggregatedMetrics.totalClicks) * 100).toFixed(2) 
-                  : '0'}%
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {overviewCards.map((card) => (
+          <Card key={card.label} className="bg-card border-card-border">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${card.bg}`}>
+                  <card.icon className={`h-4 w-4 ${card.color}`} />
+                </div>
+                <div>
+                  {metricsLoading || globalLoading ? (
+                    <Skeleton className="h-6 w-12" />
+                  ) : (
+                    <p className={`text-xl font-bold ${card.color}`}>{card.value}</p>
+                  )}
+                  <p className="text-xs text-foreground-muted">{card.label}</p>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Available Offers */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Available Offers
-              </CardTitle>
-              <CardDescription>
-                Browse and promote offers from the network. Create campaigns to start earning.
-              </CardDescription>
-            </div>
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search offers..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {globalLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <Skeleton key={i} className="h-64" />
-              ))}
-            </div>
-          ) : filteredGlobalOffers.length === 0 ? (
-            <div className="py-12 text-center">
-              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Available Offers</h3>
-              <p className="text-muted-foreground">
-                {searchTerm ? 'No offers match your search criteria.' : 'Check back later for new offers from the network.'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredGlobalOffers.map((offer) => (
-                <Card key={offer.id} className="hover:shadow-lg transition-shadow border">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg">{offer.name}</CardTitle>
-                        {offer.network && <NetworkBadge network={offer.network} />}
-                      </div>
-                      {getStatusBadge(offer.status)}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-xs text-muted-foreground font-mono bg-muted p-2 rounded truncate">
-                      {offer.offer_url}
-                    </p>
+      {/* Main Tabs */}
+      <Tabs defaultValue="offers" className="w-full">
+        <TabsList className="grid grid-cols-4 w-full max-w-lg">
+          <TabsTrigger value="offers" className="flex items-center gap-1.5 text-xs">
+            <Globe className="h-3.5 w-3.5" /> Offers
+          </TabsTrigger>
+          <TabsTrigger value="earnings" className="flex items-center gap-1.5 text-xs">
+            <BarChart3 className="h-3.5 w-3.5" /> Earnings
+          </TabsTrigger>
+          <TabsTrigger value="withdrawals" className="flex items-center gap-1.5 text-xs">
+            <ArrowUpRight className="h-3.5 w-3.5" /> Payouts
+          </TabsTrigger>
+          <TabsTrigger value="payment-methods" className="flex items-center gap-1.5 text-xs">
+            <CreditCard className="h-3.5 w-3.5" /> Methods
+          </TabsTrigger>
+        </TabsList>
 
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <DollarSign className="h-4 w-4 text-success" />
-                        <span className="text-lg font-bold text-success">
-                          ${Number(offer.payout).toFixed(2)}
-                        </span>
-                        <span className="text-sm text-muted-foreground">{offer.currency}</span>
-                      </div>
-                      {offer.daily_cap && (
-                        <div className="text-right">
-                          <div className="text-xs text-muted-foreground">Daily Cap</div>
-                          <div className="font-medium">{offer.daily_cap}</div>
-                        </div>
-                      )}
-                    </div>
+        <TabsContent value="offers" className="mt-6">
+          <OfferMarketplace />
+        </TabsContent>
 
-                    {offer.countries && offer.countries.length > 0 && (
-                      <div>
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Globe className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium text-muted-foreground">Countries</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {offer.countries.slice(0, 4).map((country) => (
-                            <Badge key={country} variant="outline" className="text-xs">
-                              {country}
-                            </Badge>
-                          ))}
-                          {offer.countries.length > 4 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{offer.countries.length - 4} more
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    )}
+        <TabsContent value="earnings" className="mt-6">
+          <EarningsDashboard />
+        </TabsContent>
 
-                    <Button 
-                      className="w-full"
-                      onClick={() => handleCreateCampaign(offer.id)}
-                      disabled={offer.status !== 'active'}
-                    >
-                      Create Campaign
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <TabsContent value="withdrawals" className="mt-6">
+          <WithdrawalPanel />
+        </TabsContent>
 
-      {/* Create Campaign Dialog */}
-      <CreateCampaignDialog
-        open={campaignDialogOpen}
-        onOpenChange={handleDialogClose}
-        defaultOfferId={selectedOfferId}
-      />
+        <TabsContent value="payment-methods" className="mt-6">
+          <PaymentMethodsManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
