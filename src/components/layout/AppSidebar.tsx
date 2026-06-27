@@ -1,4 +1,4 @@
-import { BarChart3, Target, Settings, Users, Brain, TrendingUp, Shield, ClipboardCheck, Package, Zap, ShieldAlert } from "lucide-react";
+import { BarChart3, Target, Settings, Users, Brain, TrendingUp, Shield, ClipboardCheck, Package, Zap, ShieldAlert, Link, DollarSign } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import cpazenLogo from "@/assets/cpazen-logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,18 +21,19 @@ import {
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Campaigns", href: "/campaigns", icon: Target },
+  { name: "Smartlink", href: "/smartlink", icon: Link },
   { name: "AI Tools", href: "/ai-tools", icon: Brain },
   { name: "Analytics", href: "/analytics", icon: TrendingUp },
   { name: "Integration", href: "/integration", icon: Settings },
   { name: "Profile", href: "/profile", icon: Users },
 ];
 
-// Affiliate-only navigation
+// Affiliate navigation - visible to affiliates AND admins (for testing)
 const affiliateNavigation = [
   { name: "Affiliate Hub", href: "/affiliate-dashboard", icon: Package },
 ];
 
-// Admin-only navigation - includes Offers management
+// Admin-only navigation
 const adminNavigation = [
   { name: "Admin", href: "/admin", icon: Shield },
   { name: "Offers", href: "/offers", icon: Zap },
@@ -93,8 +94,8 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Affiliate Section - visible to affiliates */}
-        {userRole === 'affiliate' && (
+        {/* Affiliate Section - visible to affiliates and admins */}
+        {(userRole === 'affiliate' || userRole === 'admin') && (
           <SidebarGroup>
             <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
               Affiliate

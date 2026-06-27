@@ -12,6 +12,7 @@ import { AdminOfferManager } from '@/components/admin/AdminOfferManager';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { AdminWorkflowGuide } from '@/components/admin/AdminWorkflowGuide';
+import { AdminPaymentManager } from '@/components/admin/AdminPaymentManager';
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -199,18 +200,23 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-2">
-        <Shield className="h-8 w-8" />
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-brand-teal/10">
+          <Shield className="h-6 w-6 text-brand-teal" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
+          <p className="text-sm text-foreground-muted">Network management & monitoring</p>
+        </div>
       </div>
 
       {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <Card>
+        <Card className="bg-card border-card-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-foreground-muted">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-brand-teal" />
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -221,10 +227,10 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card border-card-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Campaigns</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <Activity className="h-4 w-4 text-foreground-muted" />
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -235,10 +241,10 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card border-card-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Clicks</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="h-4 w-4 text-foreground-muted" />
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -249,10 +255,10 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card border-card-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Conversions</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="h-4 w-4 text-foreground-muted" />
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -263,10 +269,10 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card border-card-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="h-4 w-4 text-foreground-muted" />
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -277,10 +283,10 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card border-card-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg CR</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="h-4 w-4 text-foreground-muted" />
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -314,6 +320,10 @@ export default function AdminPage() {
             <UserCog className="mr-2 h-4 w-4" />
             User Management
           </TabsTrigger>
+          <TabsTrigger value="payments">
+            <DollarSign className="mr-2 h-4 w-4" />
+            Payments
+          </TabsTrigger>
           <TabsTrigger value="fraud">
             Fraud Alerts
             {stats && stats.pendingAlerts > 0 && (
@@ -329,14 +339,14 @@ export default function AdminPage() {
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-4">
-          <Card>
+          <Card className="bg-card border-card-border">
             <CardHeader>
               <CardTitle>System-Wide Activity</CardTitle>
               <CardDescription>Recent activity across all user accounts</CardDescription>
             </CardHeader>
             <CardContent>
               {!recentActivity || recentActivity.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-foreground-muted">
                   No recent activity
                 </div>
               ) : (
@@ -367,11 +377,11 @@ export default function AdminPage() {
                         </div>
                         <p className="font-medium">{activity.description}</p>
                         {'campaign' in activity && (
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-foreground-muted">
                             Campaign: {activity.campaign}
                           </p>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-foreground-muted mt-1">
                           User: {activity.user} • {new Date(activity.timestamp).toLocaleString()}
                         </p>
                       </div>
@@ -395,8 +405,12 @@ export default function AdminPage() {
           <UserManagement />
         </TabsContent>
 
+        <TabsContent value="payments" className="space-y-4">
+          <AdminPaymentManager />
+        </TabsContent>
+
         <TabsContent value="fraud" className="space-y-4">
-          <Card>
+          <Card className="bg-card border-card-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5" />
@@ -406,7 +420,7 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent>
               {!fraudAlerts || fraudAlerts.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-foreground-muted">
                   No pending fraud alerts
                 </div>
               ) : (
@@ -430,17 +444,17 @@ export default function AdminPage() {
                             >
                               {alert.severity}
                             </Badge>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-foreground-muted">
                               {alert.alert_type}
                             </span>
                           </div>
                           <p className="mt-2">{alert.description}</p>
                           {alert.campaigns && (
-                            <p className="text-sm text-muted-foreground mt-1">
+                            <p className="text-sm text-foreground-muted mt-1">
                               Campaign: {alert.campaigns.name}
                             </p>
                           )}
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-foreground-muted mt-1">
                             {new Date(alert.created_at).toLocaleString()}
                           </p>
                         </div>
