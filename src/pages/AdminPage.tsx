@@ -13,6 +13,7 @@ import { UserManagement } from '@/components/admin/UserManagement';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { AdminWorkflowGuide } from '@/components/admin/AdminWorkflowGuide';
 import { AdminPaymentManager } from '@/components/admin/AdminPaymentManager';
+import { BkashPayoutManager } from '@/components/admin/BkashPayoutManager';
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -324,6 +325,9 @@ export default function AdminPage() {
             <DollarSign className="mr-2 h-4 w-4" />
             Payments
           </TabsTrigger>
+          <TabsTrigger value="bkash">
+            💳 bKash Auto-Pay
+          </TabsTrigger>
           <TabsTrigger value="fraud">
             Fraud Alerts
             {stats && stats.pendingAlerts > 0 && (
@@ -407,6 +411,10 @@ export default function AdminPage() {
 
         <TabsContent value="payments" className="space-y-4">
           <AdminPaymentManager />
+        </TabsContent>
+
+        <TabsContent value="bkash" className="space-y-4">
+          <BkashPayoutManager />
         </TabsContent>
 
         <TabsContent value="fraud" className="space-y-4">
