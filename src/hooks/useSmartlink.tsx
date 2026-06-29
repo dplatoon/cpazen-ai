@@ -19,7 +19,7 @@ export function useSmartlink() {
   const getSmartlinkUrl = (subId?: string) => {
     const base = config.use_custom_domain
       ? `https://${config.custom_domain}`
-      : `${import.meta.env.VITE_SUPABASE_URL || 'https://pxdypbnzlxxvewtwkohn.supabase.co'}/functions/v1`;
+      : `${import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
     
     let url = `${base}/smartlink?aff=${user?.id || ''}`;
     if (subId) url += `&sub=${encodeURIComponent(subId)}`;

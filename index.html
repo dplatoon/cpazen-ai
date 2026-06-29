@@ -47,9 +47,10 @@
     <meta name="revisit-after" content="7 days" />
     
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://cpazen.com/" />
+    <link rel="canonical" href="https://cpazen.ai/" />
     
     <!-- Favicon - Multiple Sizes -->
+    <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" sizes="32x32" href="/cpazen-favicon.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/cpazen-favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/cpazen-logo.png" />
@@ -70,11 +71,11 @@
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://cpazen.com/" />
+    <meta property="og:url" content="https://cpazen.ai/" />
     <meta property="og:site_name" content="Cpazen" />
     <meta property="og:title" content="Cpazen - AI-Powered CPA Tracking Platform" />
     <meta property="og:description" content="Track clicks, conversions, and optimize your CPA campaigns with AI-powered insights. Real-time analytics, fraud detection, and automated optimization." />
-    <meta property="og:image" content="https://cpazen.com/cpazen-logo.png" />
+    <meta property="og:image" content="https://cpazen.ai/cpazen-logo.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Cpazen - CPA Tracking Platform" />
@@ -82,10 +83,10 @@
     
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://cpazen.com/" />
+    <meta name="twitter:url" content="https://cpazen.ai/" />
     <meta name="twitter:title" content="Cpazen - AI-Powered CPA Tracking Platform" />
     <meta name="twitter:description" content="Track clicks, conversions, and optimize your CPA campaigns with AI-powered insights. Real-time analytics and fraud detection." />
-    <meta name="twitter:image" content="https://cpazen.com/cpazen-logo.png" />
+    <meta name="twitter:image" content="https://cpazen.ai/cpazen-logo.png" />
     <meta name="twitter:image:alt" content="Cpazen Logo" />
     <meta name="twitter:creator" content="@cpazen" />
     <meta name="twitter:site" content="@cpazen" />
@@ -93,9 +94,10 @@
     <!-- Performance Optimizations: Preconnect to Critical Origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="preconnect" href="https://rdajybqalmsdycxsruon.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-    <link rel="dns-prefetch" href="https://lovable.dev" />
+    <link rel="dns-prefetch" href="https://rdajybqalmsdycxsruon.supabase.co" />
     
     <!-- Preload critical resources -->
     <link rel="modulepreload" href="/src/main.tsx" />
@@ -115,9 +117,9 @@
         "priceCurrency": "USD"
       },
       "description": "AI-Powered CPA tracking and affiliate marketing platform with real-time analytics, fraud detection, and automated optimization.",
-      "url": "https://cpazen.com",
-      "logo": "https://cpazen.com/cpazen-logo.png",
-      "image": "https://cpazen.com/cpazen-logo.png",
+      "url": "https://cpazen.ai",
+      "logo": "https://cpazen.ai/cpazen-logo.png",
+      "image": "https://cpazen.ai/cpazen-logo.png",
       "aggregateRating": {
         "@type": "AggregateRating",
         "ratingValue": "4.8",
@@ -126,7 +128,7 @@
       "author": {
         "@type": "Organization",
         "name": "Cpazen",
-        "url": "https://cpazen.com"
+        "url": "https://cpazen.ai"
       },
       "datePublished": "2025-01-10",
       "softwareVersion": "1.0",
@@ -148,16 +150,68 @@
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      "name": "Cpazen",
-      "url": "https://cpazen.com",
-      "logo": "https://cpazen.com/cpazen-logo.png",
+      "name": "CPAZen",
+      "url": "https://cpazen.ai",
+      "logo": "https://cpazen.ai/cpazen-logo.png",
       "description": "AI-Powered CPA tracking and affiliate marketing platform",
       "contactPoint": {
         "@type": "ContactPoint",
         "contactType": "Customer Support",
-        "email": "support@cpazen.com",
+        "email": "support@cpazen.ai",
         "availableLanguage": "English"
+      },
+      "sameAs": [
+        "https://twitter.com/cpazen"
+      ]
+    }
+    </script>
+
+    <!-- WebSite Schema for Sitelinks -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "CPAZen",
+      "url": "https://cpazen.ai",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://cpazen.ai/offers?q={search_term_string}",
+        "query-input": "required name=search_term_string"
       }
+    }
+    </script>
+
+    <!-- FAQ Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is CPAZen?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "CPAZen is an AI-powered CPA tracking platform for affiliate marketers. It provides real-time click and conversion tracking, fraud detection, smartlink optimization, and automated bKash/Nagad payouts."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does CPAZen track conversions?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "CPAZen uses server-to-server (S2S) postback URLs. When a user clicks your tracking link, CPAZen generates a unique click_id. When the conversion happens, the advertiser fires a postback to CPAZen with that click_id, recording the conversion in real-time."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does CPAZen support bKash payments?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. CPAZen supports automated bKash B2P (Business to Person) payouts for Bangladesh affiliates. Admins can process single or batch payouts directly from the dashboard. Nagad and Rocket are also supported."
+          }
+        }
+      ]
     }
     </script>
   </head>

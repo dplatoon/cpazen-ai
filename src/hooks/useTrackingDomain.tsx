@@ -90,14 +90,14 @@ export function useTrackingDomain() {
   const generateTrackingUrl = (campaignId: string, subId?: string) => {
     const baseUrl = config.use_custom_domain && config.custom_domain
       ? `https://${config.custom_domain}/c`
-      : 'https://pxdypbnzlxxvewtwkohn.supabase.co/functions/v1/track-click';
+      : '${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-click';
     
     const url = `${baseUrl}/${campaignId}`;
     return subId ? `${url}?sub=${subId}` : `${url}?sub={sub_id}`;
   };
 
   const getPostbackUrl = () => {
-    return 'https://pxdypbnzlxxvewtwkohn.supabase.co/functions/v1/postback';
+    return '${import.meta.env.VITE_SUPABASE_URL}/functions/v1/postback';
   };
 
   return {

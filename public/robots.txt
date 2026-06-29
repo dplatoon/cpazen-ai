@@ -1,4 +1,26 @@
 User-agent: *
 Allow: /
+Allow: /auth
+Allow: /landing
+Allow: /terms
+Allow: /privacy
+Allow: /demo
 
-Sitemap: https://cpazen.com/sitemap.xml
+Disallow: /dashboard
+Disallow: /campaigns
+Disallow: /admin
+Disallow: /profile
+Disallow: /settings
+Disallow: /affiliate-dashboard
+Disallow: /smartlink
+Disallow: /fraud
+Disallow: /security-events
+Disallow: /audit
+Disallow: /offers
+Disallow: /analytics
+Disallow: /ai-tools
+Disallow: /integration
+
+Sitemap: https://cpazen.ai/sitemap.xml
+
+Crawl-delay: 1
