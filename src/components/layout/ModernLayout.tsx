@@ -4,6 +4,7 @@ import { EnhancedHeader } from "./EnhancedHeader";
 import { Footer } from "./Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfileBootstrap } from "@/hooks/useProfileBootstrap";
+import { usePageSEO } from "@/hooks/usePageSEO";
 import { Navigate } from "react-router-dom";
 
 interface ModernLayoutProps {
@@ -13,6 +14,7 @@ interface ModernLayoutProps {
 export function ModernLayout({ children }: ModernLayoutProps) {
   const { user, loading } = useAuth();
   useProfileBootstrap();
+  usePageSEO();
 
   // Show loading state
   if (loading) {

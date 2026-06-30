@@ -24,6 +24,7 @@ const MonitoringPage = lazy(() => import("./pages/MonitoringPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const AffiliateDashboard = lazy(() => import("./pages/AffiliateDashboard"));
+const SmartlinkPage = lazy(() => import("./pages/SmartlinkPage"));
 const FraudMonitoringPage = lazy(() => import("./pages/FraudMonitoringPage"));
 const AuditPage = lazy(() => import("./pages/AuditPage"));
 const SecurityEventsPage = lazy(() => import("./pages/SecurityEventsPage"));
@@ -70,6 +71,7 @@ const App = () => (
               <Route path="/settings" element={<ModernLayout><SettingsPage /></ModernLayout>} />
               <Route path="/admin" element={<ModernLayout><AdminPage /></ModernLayout>} />
               <Route path="/affiliate-dashboard" element={<ModernLayout><AffiliateDashboard /></ModernLayout>} />
+              <Route path="/smartlink" element={<ModernLayout><SmartlinkPage /></ModernLayout>} />
               <Route path="/fraud" element={<ModernLayout><FraudMonitoringPage /></ModernLayout>} />
               <Route path="/audit" element={<ModernLayout><AuditPage /></ModernLayout>} />
               <Route path="/security-events" element={<ModernLayout><SecurityEventsPage /></ModernLayout>} />

@@ -218,7 +218,7 @@ Content-Type: application/json
           <div className="flex gap-3">
             <Button variant="outline" asChild>
               <a
-                href="https://supabase.com/dashboard/project/pxdypbnzlxxvewtwkohn/functions"
+                href="https://supabase.com/dashboard/project/rdajybqalmsdycxsruon/functions"
                 target="_blank"
                 rel="noopener noreferrer"
               >

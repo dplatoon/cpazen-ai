@@ -67,7 +67,7 @@ export function ClickToConversionTester() {
     },
     onSuccess: (click) => {
       setGeneratedClickId(click.id);
-      const url = `https://pxdypbnzlxxvewtwkohn.supabase.co/functions/v1/track-click/${selectedCampaignId}?sub=${testSubId}`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-click/${selectedCampaignId}?sub=${testSubId}`;
       setTrackingUrl(url);
       toast({
         title: "Test Click Generated",
@@ -89,7 +89,7 @@ export function ClickToConversionTester() {
     mutationFn: async () => {
       if (!generatedClickId) throw new Error('Generate a test click first');
       
-      const postbackUrl = `https://pxdypbnzlxxvewtwkohn.supabase.co/functions/v1/postback?cid=${generatedClickId}&payout=${postbackPayout}&status=${postbackStatus}`;
+      const postbackUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/postback?cid=${generatedClickId}&payout=${postbackPayout}&status=${postbackStatus}`;
       
       const response = await fetch(postbackUrl);
       const data = await response.json();
@@ -282,7 +282,7 @@ export function ClickToConversionTester() {
                 <strong>Postback URL:</strong>
                 <br />
                 <code className="text-xs bg-muted p-1 rounded block mt-1 break-all">
-                  {`https://pxdypbnzlxxvewtwkohn.supabase.co/functions/v1/postback?cid=${generatedClickId}&payout=${postbackPayout}&status=${postbackStatus}`}
+                  {`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/postback?cid=${generatedClickId}&payout=${postbackPayout}&status=${postbackStatus}`}
                 </code>
               </AlertDescription>
             </Alert>
